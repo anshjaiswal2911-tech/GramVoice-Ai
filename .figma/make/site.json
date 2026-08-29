@@ -1,0 +1,10 @@
+{
+  "description": "Empowering rural entrepreneurs with an AI voice assistant for business guidance, covering registration, loans, marketing, and mentorship.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
