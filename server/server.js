@@ -43,14 +43,20 @@ app.use(
 
 app.use(express.json());
 
-const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY,
-});
+function getAIClient() {
+  const apiKey = (process.env.GEMINI_API_KEY || "").trim().replace(/^["']|["']$/g, "");
+  if (!apiKey) {
+    throw new Error("GEMINI_API_KEY environment variable is not configured on the server.");
+  }
+  return new GoogleGenAI({ apiKey });
+}
 
 app.get("/api/health", (req, res) => {
+  const keyConfigured = Boolean((process.env.GEMINI_API_KEY || "").trim());
   res.json({
     success: true,
     message: "GramVoice AI backend is running",
+    apiKeyConfigured: keyConfigured,
   });
 });
 
@@ -65,6 +71,7 @@ app.post("/api/chat", async (req, res) => {
       });
     }
 
+    const ai = getAIClient();
     console.log("User:", message);
 
     const response = await ai.models.generateContent({
