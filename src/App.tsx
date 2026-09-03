@@ -510,65 +510,16 @@ const [state, setState] = useState<VoiceState>('idle')
           <p className="text-sm" style={{ color: '#7a8799' }}>Hindi, English, Tamil, Marathi, Telugu — koi bhi bhasha mein bolo</p>
         </div>
 
-        {!apiKey && !showKeyInput && (
-          <div className="mb-5 p-4 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
-            style={{ background: '#fef3c7', border: '1px solid #fcd34d' }}>
-            <div>
-              <div className="text-sm font-semibold" style={{ color: '#92400e' }}>Gemini API Key Required</div>
-              <div className="text-xs mt-0.5" style={{ color: '#b45309' }}>Real AI answers ke liye apni FREE Gemini key add karo</div>
-            </div>
-            <button onClick={() => setShowKeyInput(true)}
-              className="px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap text-white"
-              style={{ background: '#f59e0b' }}>
-              Add API Key
-            </button>
+        <div className="mb-5 flex items-center justify-between px-4 py-2.5 rounded-xl"
+          style={{ background: '#d1fae5', border: '1px solid #a7f3d0' }}>
+          <div className="flex items-center gap-2 text-xs font-medium" style={{ color: '#065f46' }}>
+            <div className="w-2 h-2 rounded-full bg-green-500" />
+            GramVoice AI Live — Real AI answers enabled ✓
           </div>
-        )}
-
-        {showKeyInput && (
-          <div className="mb-5 p-5 rounded-2xl" style={{ background: '#fff', border: '1px solid #e2e8f0', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
-            <div className="text-sm font-semibold mb-1" style={{ color: '#0d1117' }}>Gemini API Key Enter Karo</div>
-            <div className="text-xs mb-1" style={{ color: '#7a8799' }}>
-              Key: <strong>aistudio.google.com</strong> pe jao → API Keys → Create API Key
-            </div>
-            <div className="text-xs mb-4" style={{ color: '#10b981' }}>
-              Key aisi dikhegi: AIzaSy... — poori key copy karo
-            </div>
-            <div className="flex gap-2">
-              <input
-                value={keyDraft}
-                onChange={e => { setKeyDraft(e.target.value); setKeyError('') }}
-                placeholder="Yahan paste karo apni Gemini API key (AIza...)..."
-                className="flex-1 px-4 py-2.5 rounded-xl text-sm outline-none font-mono"
-                style={{ background: '#f7f9fc', border: `1px solid ${keyError ? '#ef4444' : '#e2e8f0'}`, color: '#0d1117' }}
-                onKeyDown={e => e.key === 'Enter' && saveKey()}
-              />
-              <button onClick={saveKey} className="px-4 py-2.5 rounded-xl text-sm font-semibold text-white gradient-btn whitespace-nowrap">
-                Save & Connect
-              </button>
-              <button onClick={() => { setShowKeyInput(false); setKeyError('') }}
-                className="px-3 py-2.5 rounded-xl text-sm border"
-                style={{ color: '#7a8799', borderColor: '#e2e8f0' }}>
-                X
-              </button>
-            </div>
-            {keyError && <div className="text-xs mt-2" style={{ color: '#ef4444' }}>{keyError}</div>}
-          </div>
-        )}
-
-        {apiKey && !showKeyInput && (
-          <div className="mb-5 flex items-center justify-between px-4 py-2.5 rounded-xl"
-            style={{ background: '#d1fae5', border: '1px solid #a7f3d0' }}>
-            <div className="flex items-center gap-2 text-xs font-medium" style={{ color: '#065f46' }}>
-              <div className="w-2 h-2 rounded-full bg-green-500" />
-              Gemini AI Connected — Real answers enabled ✓
-            </div>
-            <button onClick={() => { setShowKeyInput(true); setKeyDraft(apiKey) }}
-              className="text-xs" style={{ color: '#059669' }}>
-              Change Key
-            </button>
-          </div>
-        )}
+          <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full">
+            Online
+          </span>
+        </div>
 
         <div className="grid lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 rounded-2xl overflow-hidden flex flex-col"
@@ -580,8 +531,8 @@ const [state, setState] = useState<VoiceState>('idle')
               <div>
                 <div className="text-sm font-semibold" style={{ color: '#0d1117' }}>GramVoice AI</div>
                 <div className="flex items-center gap-1.5">
-                  <div className={`w-1.5 h-1.5 rounded-full ${apiKey ? 'bg-green-400' : 'bg-yellow-400'}`} />
-                  <span className="text-xs" style={{ color: '#7a8799' }}>{apiKey ? 'Live · Gemini 1.5 Flash (FREE)' : 'Demo Mode · Add key for real answers'}</span>
+                  <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                  <span className="text-xs" style={{ color: '#7a8799' }}>Live · Gemini AI Assistant (FREE)</span>
                 </div>
               </div>
             </div>
