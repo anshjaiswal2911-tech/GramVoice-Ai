@@ -367,8 +367,9 @@ const [state, setState] = useState<VoiceState>('idle')
   setState('processing')
   setKeyError('')
 
+  const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/$/, '')
   try {
-    const res = await fetch('http://localhost:5000/api/chat', {
+    const res = await fetch(`${API_BASE_URL}/api/chat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -433,12 +434,12 @@ const [state, setState] = useState<VoiceState>('idle')
       ...prev,
       {
         role: 'ai',
-        text: 'AI se connect nahi ho pa raha. Please check karo ki backend localhost:5000 par running hai.',
+        text: 'AI se connect nahi ho pa raha. Kripya check karein ki backend server sahi se chal raha hai.',
       },
     ])
 
     setKeyError(
-      'Backend connection failed. Make sure server localhost:5000 par running hai.'
+      'Backend connection failed. Kripya check karein ki backend API server online hai.'
     )
 
     setState('idle')

@@ -1,9 +1,36 @@
+# Dependencies
 node_modules/
+server/node_modules/
+
+# Production build outputs
 dist/
+dist-ssr/
 build/
-.cache/
-.env*
+*.local
+
+# Environment variables & secrets (NEVER commit secrets!)
+.env
+.env.*
+.env.local
+.env.development
+.env.test
+.env.production
+server/.env
+server/.env.*
+
+# Keep environment variable examples
+!.env.example
+!server/.env.example
+
+# Editor & OS files
+.DS_Store
+*.pem
+.vscode/
+.idea/
+
+# Vite & build caches
 .vite/
+.cache/
 vite.config.*.timestamp-*
 *.tsbuildinfo
 *-debug.log*
@@ -11,3 +38,4 @@ logs/
 *.log
 .claude-replay.*
 .tmp-*
+.vercel/
