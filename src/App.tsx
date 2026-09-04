@@ -1,4 +1,4 @@
-import { useState, useRef, type CSSProperties } from 'react'
+import { useState, useEffect, useRef, type CSSProperties } from 'react'
 
 type Page = 'landing' | 'voice' | 'schemes' | 'ideas' | 'mentor' | 'dashboard' | 'about'
 
