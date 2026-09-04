@@ -361,6 +361,12 @@ const [state, setState] = useState<VoiceState>('idle')
     setKeyError('')
   }
 
+  useEffect(() => {
+    // Automatically wake up Render backend as soon as user opens the page
+    const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/$/, '')
+    fetch(`${API_BASE_URL}/api/health`).catch(() => {})
+  }, [])
+
   const callGemini = async (question: string) => {
   if (!question.trim()) return
 
@@ -434,12 +440,12 @@ const [state, setState] = useState<VoiceState>('idle')
       ...prev,
       {
         role: 'ai',
-        text: 'AI se connect nahi ho pa raha. Kripya check karein ki backend server sahi se chal raha hai.',
+        text: 'Server connect ho raha hai (Render cold start). Kripya 15-20 second intezaar karke apna sawaal dubara bhejein!',
       },
     ])
 
     setKeyError(
-      'Backend connection failed. Kripya check karein ki backend API server online hai.'
+      'Server wake up ho raha hai. Kripya thoda intezaar karke dubara try karein.'
     )
 
     setState('idle')
