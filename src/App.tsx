@@ -419,32 +419,41 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
 
       if (!cleanText) return
 
-      const utter = new SpeechSynthesisUtterance(cleanText)
-      const voices = window.speechSynthesis.getVoices() || []
-      const hasDevanagari = /[\u0900-\u097F]/.test(cleanText)
+      // Delay by 150ms to allow mobile audio session to transition from mic recording to speaker output
+      setTimeout(() => {
+        try {
+          window.speechSynthesis.resume()
+          const utter = new SpeechSynthesisUtterance(cleanText)
+          const voices = window.speechSynthesis.getVoices() || []
+          const hasDevanagari = /[\u0900-\u097F]/.test(cleanText)
 
-      if (hasDevanagari) {
-        utter.lang = 'hi-IN'
-        const hiVoice = voices.find(v => v.lang.startsWith('hi') || v.name.toLowerCase().includes('hindi') || v.name.toLowerCase().includes('lekha') || v.name.toLowerCase().includes('neerja'))
-        if (hiVoice) utter.voice = hiVoice
-      } else {
-        utter.lang = 'en-IN'
-        const enVoice = voices.find(v => v.lang.startsWith('en-IN') || v.name.toLowerCase().includes('india') || v.name.toLowerCase().includes('rishi') || v.name.toLowerCase().includes('sangeeta')) || voices.find(v => v.lang.startsWith('en'))
-        if (enVoice) utter.voice = enVoice
-      }
+          if (hasDevanagari) {
+            utter.lang = 'hi-IN'
+            const hiVoice = voices.find(v => v.lang.startsWith('hi') || v.name.toLowerCase().includes('hindi') || v.name.toLowerCase().includes('lekha') || v.name.toLowerCase().includes('neerja'))
+            if (hiVoice) utter.voice = hiVoice
+          } else {
+            utter.lang = 'en-IN'
+            const enVoice = voices.find(v => v.lang.startsWith('en-IN') || v.name.toLowerCase().includes('india') || v.name.toLowerCase().includes('rishi') || v.name.toLowerCase().includes('sangeeta')) || voices.find(v => v.lang.startsWith('en'))
+            if (enVoice) utter.voice = enVoice
+          }
 
-      utter.rate = 0.95
-      utter.pitch = 1.0
-      utter.volume = 1.0
+          utter.rate = 0.95
+          utter.pitch = 1.0
+          utter.volume = 1.0
 
-      utter.onstart = () => setState('speaking')
-      utter.onend = () => setState('idle')
-      utter.onerror = (e) => {
-        console.warn('SpeechSynthesis error:', e)
-        setState('idle')
-      }
+          utter.onstart = () => setState('speaking')
+          utter.onend = () => setState('idle')
+          utter.onerror = (e) => {
+            console.warn('SpeechSynthesis error:', e)
+            setState('idle')
+          }
 
-      window.speechSynthesis.speak(utter)
+          window.speechSynthesis.speak(utter)
+        } catch (err) {
+          console.warn('Delayed speak error:', err)
+          setState('idle')
+        }
+      }, 150)
     } catch (err) {
       console.warn('SpeechSynthesis speak failed:', err)
       setState('idle')
@@ -555,10 +564,14 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
       return
     }
 
-    // Unlock iOS Safari audio on user tap
+    // Warm up and prime audio output on touch gesture for iOS Safari
     if ('speechSynthesis' in window) {
       try {
+        window.speechSynthesis.cancel()
         window.speechSynthesis.resume()
+        const warmup = new SpeechSynthesisUtterance('')
+        warmup.volume = 0
+        window.speechSynthesis.speak(warmup)
       } catch {}
     }
 
@@ -570,7 +583,6 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
     recognition.maxAlternatives = 1
 
     latestTranscriptRef.current = ''
-    let capturedFinal = ''
 
     recognition.onstart = () => {
       setState('listening')
@@ -578,16 +590,17 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
     }
 
     recognition.onresult = (event: any) => {
-      let interim = ''
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const text = event.results[i][0].transcript
-        if (event.results[i].isFinal) {
-          capturedFinal += (capturedFinal ? ' ' : '') + text
+      let finalStr = ''
+      let interimStr = ''
+      for (let i = 0; i < event.results.length; i++) {
+        const result = event.results[i]
+        if (result.isFinal) {
+          finalStr += result[0].transcript + ' '
         } else {
-          interim += text
+          interimStr += result[0].transcript
         }
       }
-      const full = (capturedFinal + ' ' + interim).trim()
+      const full = (finalStr + interimStr).trim()
       if (full) {
         latestTranscriptRef.current = full
         setInputText(full)
