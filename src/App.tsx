@@ -355,6 +355,7 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
   const recognitionRef = useRef<any>(null)
   const silenceTimerRef = useRef<any>(null)
   const latestTranscriptRef = useRef<string>('')
+  const isSpeakingCancelledRef = useRef<boolean>(false)
 
   const scrollToBottom = () => {
     setTimeout(() => {
@@ -370,6 +371,16 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
     setShowKeyInput(false)
     setKeyDraft('')
     setKeyError('')
+  }
+
+  const stopSpeaking = () => {
+    isSpeakingCancelledRef.current = true
+    if ('speechSynthesis' in window) {
+      try {
+        window.speechSynthesis.cancel()
+      } catch {}
+    }
+    setState('idle')
   }
 
   useEffect(() => {
@@ -388,8 +399,10 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
   const speakText = (rawText: string) => {
     if (!('speechSynthesis' in window)) return
 
+    stopSpeaking()
+    isSpeakingCancelledRef.current = false
+
     try {
-      window.speechSynthesis.cancel()
       window.speechSynthesis.resume()
 
       // Comprehensive voice normalization for clear Indian pronunciation
@@ -418,8 +431,10 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
 
       if (!cleanText) return
 
-      // Delay by 100ms for mobile audio hardware transition
+      // Delay by 80ms for mobile audio hardware transition
       setTimeout(() => {
+        if (isSpeakingCancelledRef.current) return
+
         try {
           window.speechSynthesis.resume()
           const voices = window.speechSynthesis.getVoices() || []
@@ -431,8 +446,10 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
           let currentIndex = 0
 
           const playNextSentence = () => {
-            if (currentIndex >= sentences.length) {
-              setState('idle')
+            if (isSpeakingCancelledRef.current || currentIndex >= sentences.length) {
+              if (!isSpeakingCancelledRef.current) {
+                setState('idle')
+              }
               return
             }
 
@@ -468,13 +485,23 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
             utter.pitch = 1.02
             utter.volume = 1.0
 
-            utter.onstart = () => setState('speaking')
+            utter.onstart = () => {
+              if (isSpeakingCancelledRef.current) {
+                try { window.speechSynthesis.cancel() } catch {}
+                return
+              }
+              setState('speaking')
+            }
             utter.onend = () => {
-              playNextSentence()
+              if (!isSpeakingCancelledRef.current) {
+                playNextSentence()
+              }
             }
             utter.onerror = (e) => {
-              console.warn('Utterance error:', e)
-              playNextSentence()
+              if (!isSpeakingCancelledRef.current) {
+                console.warn('Utterance error:', e)
+                playNextSentence()
+              }
             }
 
             window.speechSynthesis.speak(utter)
@@ -485,7 +512,7 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
           console.warn('SpeechSynthesis playback error:', err)
           setState('idle')
         }
-      }, 100)
+      }, 80)
     } catch (err) {
       console.warn('SpeechSynthesis init failed:', err)
       setState('idle')
@@ -575,8 +602,7 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
 
   const handleMicClick = async () => {
     if (state === 'speaking') {
-      try { window.speechSynthesis?.cancel() } catch {}
-      setState('idle')
+      stopSpeaking()
       return
     }
 
@@ -761,11 +787,17 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
                   {m.role === 'ai' && (
                     <button
                       type="button"
-                      onClick={() => speakText(m.text)}
-                      className="mt-1.5 ml-1 text-[11px] font-medium text-blue-700 bg-blue-50/90 hover:bg-blue-100 border border-blue-200/80 px-2.5 py-1 rounded-lg flex items-center gap-1.5 transition-all shadow-xs"
+                      onClick={() => {
+                        if (state === 'speaking') {
+                          stopSpeaking()
+                        } else {
+                          speakText(m.text)
+                        }
+                      }}
+                      className="mt-1.5 ml-1 text-[11px] font-medium text-blue-700 bg-blue-50/90 hover:bg-blue-100 border border-blue-200/80 px-2.5 py-1 rounded-lg flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
                     >
-                      <VolumeIcon size={12} className="text-blue-600" />
-                      <span>Awaaz me sunein (Listen)</span>
+                      <VolumeIcon size={12} className={state === 'speaking' ? 'text-red-500' : 'text-blue-600'} />
+                      <span>{state === 'speaking' ? '⏹️ Awaaz Rokein (Stop)' : '🔊 Awaaz me sunein (Listen)'}</span>
                     </button>
                   )}
                 </div>
@@ -884,10 +916,10 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
               {state === 'speaking' && (
                 <button
                   type="button"
-                  onClick={() => { window.speechSynthesis?.cancel(); setState('idle') }}
-                  className="text-xs px-3.5 py-1.5 rounded-lg border text-red-600 border-red-200 hover:bg-red-50 transition-all"
+                  onClick={stopSpeaking}
+                  className="text-xs px-4 py-2 rounded-xl border-2 font-semibold text-red-600 border-red-300 bg-red-50 hover:bg-red-100 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm animate-pulse"
                 >
-                  Awaaz rokein (Stop Audio)
+                  ⏹️ Awaaz Rokein (Stop Audio)
                 </button>
               )}
             </div>
