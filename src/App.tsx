@@ -58,7 +58,7 @@ const VolumeIcon = ({ size = 16, className = '', style = {} }: IconProps) => (
 )
 
 // ── Nav ─────────────────────────────────────────────────────────────────────
-function Nav({ current, navigate, onInstall, canInstall }: { current: Page; navigate: (p: Page) => void; onInstall?: () => void; canInstall?: boolean }) {
+function Nav({ current, navigate }: { current: Page; navigate: (p: Page) => void }) {
   const [open, setOpen] = useState(false)
 
   const links: { label: string; page: Page }[] = [
@@ -87,7 +87,7 @@ function Nav({ current, navigate, onInstall, canInstall }: { current: Page; navi
             <button
               key={l.page}
               onClick={() => navigate(l.page)}
-              className="px-3.5 py-2 rounded-lg text-sm font-medium transition-all duration-150"
+              className="px-3.5 py-2 rounded-lg text-sm font-medium transition-all duration-150 cursor-pointer"
               style={{
                 color: current === l.page ? '#1a6fff' : '#3d4755',
                 background: current === l.page ? '#e8f0ff' : 'transparent',
@@ -99,19 +99,10 @@ function Nav({ current, navigate, onInstall, canInstall }: { current: Page; navi
         </nav>
 
         <div className="flex items-center gap-3">
-          {canInstall && (
-            <button
-              onClick={onInstall}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-emerald-700 bg-emerald-100 hover:bg-emerald-200 transition-all cursor-pointer"
-            >
-              <span>📱</span>
-              <span>Install App</span>
-            </button>
-          )}
-          <button onClick={() => navigate('voice')} className="hidden sm:block px-4 py-2 rounded-xl text-sm font-semibold text-white gradient-btn">
+          <button onClick={() => navigate('voice')} className="hidden sm:block px-4 py-2 rounded-xl text-sm font-semibold text-white gradient-btn cursor-pointer transition-all hover:scale-105">
             Voice Assistant
           </button>
-          <button onClick={() => setOpen(!open)} className="md:hidden p-2 rounded-lg" style={{ color: '#3d4755' }}>
+          <button onClick={() => setOpen(!open)} className="md:hidden p-2 rounded-lg cursor-pointer" style={{ color: '#3d4755' }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M3 12H21M3 6H21M3 18H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
           </button>
         </div>
@@ -119,20 +110,11 @@ function Nav({ current, navigate, onInstall, canInstall }: { current: Page; navi
 
       {open && (
         <div className="md:hidden px-4 pb-4 flex flex-col gap-1" style={{ borderTop: '1px solid #e2e8f0' }}>
-          {canInstall && (
-            <button
-              onClick={() => { onInstall?.(); setOpen(false) }}
-              className="w-full text-left px-3 py-2.5 rounded-lg text-sm font-semibold text-emerald-700 bg-emerald-50 mb-1 flex items-center gap-2"
-            >
-              <span>📱</span>
-              <span>Install GramVoice App on Mobile</span>
-            </button>
-          )}
           {links.map(l => (
             <button
               key={l.page}
               onClick={() => { navigate(l.page); setOpen(false) }}
-              className="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium"
+              className="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium cursor-pointer"
               style={{ color: current === l.page ? '#1a6fff' : '#3d4755', background: current === l.page ? '#e8f0ff' : 'transparent' }}
             >
               {l.label}
@@ -147,18 +129,18 @@ function Nav({ current, navigate, onInstall, canInstall }: { current: Page; navi
 // ── Landing Page ─────────────────────────────────────────────────────────────
 function LandingPage({ navigate }: { navigate: (p: Page) => void }) {
   const features = [
-    { icon: '🧭', title: 'Business Guide', desc: 'Step-by-step guidance to register and launch your business in your language.', color: '#e8f0ff', accent: '#1a6fff' },
-    { icon: '🏛️', title: 'Government Schemes', desc: 'Discover subsidies, grants, and schemes tailored for rural entrepreneurs.', color: '#d1fae5', accent: '#10b981' },
-    { icon: '🤝', title: 'Business Mentor', desc: 'Connect with experienced mentors across industries for real guidance.', color: '#fef3c7', accent: '#f59e0b' },
-    { icon: '📣', title: 'Marketing Tips', desc: 'Learn how to reach more customers with simple digital and offline tactics.', color: '#fce7f3', accent: '#ec4899' },
-    { icon: '💳', title: 'Loan Assistance', desc: 'Find the right microfinance or bank loan options for your business stage.', color: '#ede9fe', accent: '#8b5cf6' },
-    { icon: '🌐', title: 'Multilingual Support', desc: 'Speak in Hindi, Tamil, Marathi, Telugu or English — we understand all.', color: '#e0f2fe', accent: '#0ea5e9' },
+    { icon: '🧭', title: 'Business Guide', desc: 'Step-by-step guidance to register and launch your business in your language.', color: '#e8f0ff', accent: '#1a6fff', page: 'voice' as Page },
+    { icon: '🏛️', title: 'Government Schemes', desc: 'Discover subsidies, grants, and schemes tailored for rural entrepreneurs.', color: '#d1fae5', accent: '#10b981', page: 'schemes' as Page },
+    { icon: '🤝', title: 'Business Mentor', desc: 'Connect with experienced mentors across industries for real guidance.', color: '#fef3c7', accent: '#f59e0b', page: 'mentor' as Page },
+    { icon: '📣', title: 'Marketing Tips', desc: 'Learn how to reach more customers with simple digital and offline tactics.', color: '#fce7f3', accent: '#ec4899', page: 'voice' as Page },
+    { icon: '💳', title: 'Loan Assistance', desc: 'Find the right microfinance or bank loan options for your business stage.', color: '#ede9fe', accent: '#8b5cf6', page: 'schemes' as Page },
+    { icon: '🌐', title: 'Multilingual Support', desc: 'Speak in Hindi, Tamil, Marathi, Telugu or English — we understand all.', color: '#e0f2fe', accent: '#0ea5e9', page: 'voice' as Page },
   ]
 
   const steps = [
     { icon: '🎙️', label: 'Voice Input', desc: 'Ask your question in any language' },
     { icon: '📚', label: 'Knowledge Base', desc: 'Searched across 10,000+ verified sources' },
-    { icon: '🤖', label: 'Gemini AI', desc: 'Processed and simplified by AI' },
+    { icon: '🤖', label: 'GramVoice AI Engine', desc: 'Processed and simplified by Indian Business AI' },
     { icon: '🔊', label: 'Voice Response', desc: 'Answered in your preferred language' },
   ]
 
@@ -186,7 +168,7 @@ function LandingPage({ navigate }: { navigate: (p: Page) => void }) {
             <div className="fade-up">
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold mb-6"
                 style={{ background: '#e8f0ff', color: '#1a6fff', border: '1px solid #bfdbfe' }}>
-                <SparklesIcon size={13} /> Powered by Google Gemini AI
+                <SparklesIcon size={13} /> Official Rural Business AI Platform
               </div>
 
               <h1 className="text-5xl sm:text-6xl lg:text-7xl font-semibold leading-[1.07] tracking-tight mb-6"
@@ -714,7 +696,7 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
                 <div className="text-sm font-semibold" style={{ color: '#0d1117' }}>GramVoice AI</div>
                 <div className="flex items-center gap-1.5">
                   <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                  <span className="text-xs" style={{ color: '#7a8799' }}>Live · Gemini AI Assistant (FREE)</span>
+                  <span className="text-xs" style={{ color: '#7a8799' }}>Live · Enterprise Business Assistant</span>
                 </div>
               </div>
             </div>
@@ -887,26 +869,47 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
 }
 
 // ── Government Schemes Page ──────────────────────────────────────────────────
-function GovernmentSchemesPage() {
+function GovernmentSchemesPage({ navigate }: { navigate: (p: Page) => void }) {
   const [search, setSearch] = useState('')
   const [activeCategory, setActiveCategory] = useState('All')
+  const [selectedScheme, setSelectedScheme] = useState<any | null>(null)
+  const [isListening, setIsListening] = useState(false)
 
   const categories = ['All', 'Loans', 'Subsidies', 'Training', 'Women', 'Agriculture']
 
   const schemes = [
-    { name: 'PM Mudra Yojana', category: 'Loans', ministry: 'Ministry of Finance', benefit: 'Loans up to ₹10 Lakh', eligibility: 'Any non-corporate micro business', deadline: 'Ongoing', badge: '🔥 Popular', color: '#e8f0ff', accent: '#1a6fff' },
-    { name: 'Stand Up India', category: 'Loans', ministry: 'SIDBI', benefit: 'Loans ₹10L–₹1Cr', eligibility: 'SC/ST & Women entrepreneurs', deadline: 'Ongoing', badge: '✨ New', color: '#d1fae5', accent: '#10b981' },
-    { name: 'Startup India Seed Fund', category: 'Subsidies', ministry: 'DPIIT', benefit: 'Up to ₹20 Lakh grant', eligibility: 'DPIIT-recognized startups', deadline: 'Dec 2025', badge: null, color: '#fef3c7', accent: '#f59e0b' },
-    { name: 'PM Vishwakarma Yojana', category: 'Training', ministry: 'MSME Ministry', benefit: 'Free skill training + ₹15,000', eligibility: 'Artisans & craftspeople', deadline: 'Ongoing', badge: '🏆 Top Rated', color: '#ede9fe', accent: '#8b5cf6' },
-    { name: 'Mahila Udyam Nidhi', category: 'Women', ministry: 'SIDBI', benefit: 'Soft loans up to ₹10 Lakh', eligibility: 'Women-led enterprises', deadline: 'Ongoing', badge: '👩‍💼 Women Only', color: '#fce7f3', accent: '#ec4899' },
-    { name: 'PMEGP Scheme', category: 'Subsidies', ministry: 'KVIC', benefit: '15–35% capital subsidy', eligibility: '18+ years, village/town areas', deadline: 'Mar 2025', badge: null, color: '#e0f2fe', accent: '#0ea5e9' },
-    { name: 'Agri Infrastructure Fund', category: 'Agriculture', ministry: 'Agriculture Ministry', benefit: 'Loans up to ₹2 Crore', eligibility: 'Farmers & FPOs', deadline: 'Ongoing', badge: '🌾 New', color: '#d1fae5', accent: '#10b981' },
-    { name: 'ASPIRE Scheme', category: 'Training', ministry: 'MSME Ministry', benefit: 'Technology incubation', eligibility: 'Rural entrepreneurs & innovators', deadline: 'Ongoing', badge: null, color: '#e8f0ff', accent: '#1a6fff' },
+    { name: 'PM Mudra Yojana', category: 'Loans', ministry: 'Ministry of Finance', benefit: 'Loans up to ₹10 Lakh', eligibility: 'Any non-corporate micro business (Manufacturing, Trading, Services)', deadline: 'Ongoing', badge: '🔥 Popular', color: '#e8f0ff', accent: '#1a6fff', docs: ['Aadhaar Card', 'PAN Card', 'Business Address Proof', 'Last 6 Months Bank Statement'], steps: ['Bank ya NBFC branch me jayein ya Udyamimitra portal open karein.', 'Shishu (up to ₹50k), Kishore (up to ₹5L), ya Tarun (up to ₹10L) category select karein.', 'Application form bharein aur documents attach karein.', '7-10 working days me loan amount sanction ho jayegi.'] },
+    { name: 'Stand Up India', category: 'Loans', ministry: 'SIDBI', benefit: 'Loans ₹10L–₹1Cr', eligibility: 'SC/ST & Women entrepreneurs setting up greenfield enterprises', deadline: 'Ongoing', badge: '✨ New', color: '#d1fae5', accent: '#10b981', docs: ['Identity & Caste/Gender Certificate', 'Project Report & Business Plan', 'Pollution Control NOC (if applicable)', 'Bank Statement'], steps: ['Stand Up India official portal par register karein.', 'Handholding agency ya nearest bank branch select karein.', 'Project report aur quotations submit karein.', 'Bank verification ke baad loan sanction hoga.'] },
+    { name: 'Startup India Seed Fund', category: 'Subsidies', ministry: 'DPIIT', benefit: 'Up to ₹20 Lakh grant', eligibility: 'DPIIT-recognized startups incorporated within 2 years', deadline: 'Dec 2025', badge: null, color: '#fef3c7', accent: '#f59e0b', docs: ['DPIIT Recognition Certificate', 'Pitch Deck & Proof of Concept', 'Incorporation Certificate', 'Founders KYC'], steps: ['Startup India portal par login karein.', 'Seed Fund Scheme section me apply karein.', 'Approved incubator choose karein jo aapka evaluation karega.', 'Presentation ke baad milestone-based funds release honge.'] },
+    { name: 'PM Vishwakarma Yojana', category: 'Training', ministry: 'MSME Ministry', benefit: 'Free skill training + ₹15,000 tool kit + ₹3 Lakh collateral-free loan', eligibility: 'Traditional artisans & craftspeople (Carpenters, Blacksmiths, Tailors, etc.)', deadline: 'Ongoing', badge: '🏆 Top Rated', color: '#ede9fe', accent: '#8b5cf6', docs: ['Aadhaar Card', 'Ration Card', 'Mobile linked to Aadhaar', 'Bank Account details'], steps: ['Nearest CSC (Common Service Center) par bio-metric e-KYC karein.', 'Gram Panchayat / ULB level verification complete hoga.', '5-7 days basic skill training milegi with ₹500/day stipend.', '₹15,000 toolkit e-voucher aur ₹1 Lakh (Tranche 1) loan available hoga at 5% interest.'] },
+    { name: 'Mahila Udyam Nidhi', category: 'Women', ministry: 'SIDBI', benefit: 'Soft loans up to ₹10 Lakh', eligibility: 'Women-led small scale enterprises with min 51% shareholding', deadline: 'Ongoing', badge: '👩‍💼 Women Only', color: '#fce7f3', accent: '#ec4899', docs: ['Women Ownership Proof (51%+)', 'Identity Proof', 'Project Feasibility Report', 'Trade License'], steps: ['State Financial Corporation ya partner bank branch visit karein.', 'Mahila Udyam Nidhi application form fill karein.', 'Project cost assessment ke baad seed capital loan release hoga.'] },
+    { name: 'PMEGP Scheme', category: 'Subsidies', ministry: 'KVIC', benefit: '15–35% capital subsidy on project cost up to ₹50 Lakh', eligibility: '18+ years, minimum 8th pass for projects over ₹10L in manufacturing', deadline: 'Mar 2025', badge: null, color: '#e0f2fe', accent: '#0ea5e9', docs: ['Educational Qualification Certificate', 'Project Report (DPR)', 'Rural Area Certificate', 'Special Category Certificate (if applicable)'], steps: ['KVIC online portal (kviconline.gov.in) par PMEGP e-Portal form bharein.', 'DPR aur KYC documents upload karein.', 'District Task Force Committee (DLTFC) application review karegi.', 'Sanction ke baad EDP training hogi aur subsidy bank me transfer hogi.'] },
+    { name: 'Agri Infrastructure Fund', category: 'Agriculture', ministry: 'Agriculture Ministry', benefit: 'Loans up to ₹2 Crore with 3% interest subvention', eligibility: 'Farmers, Agri-entrepreneurs, FPOs & Self Help Groups', deadline: 'Ongoing', badge: '🌾 New', color: '#d1fae5', accent: '#10b981', docs: ['Land records / Lease agreement', 'DPR for post-harvest / cold chain infra', 'Aadhaar & PAN', 'Bank Statement'], steps: ['Agri Infra portal (agriinfra.dac.gov.in) par beneficiary registration karein.', 'Detailed project report upload karein.', 'Participating bank loan approve karega with CGTMSE credit guarantee.'] },
+    { name: 'ASPIRE Scheme', category: 'Training', ministry: 'MSME Ministry', benefit: 'Technology incubation & up to ₹1 Crore for Livelihood Business Incubators', eligibility: 'Rural entrepreneurs, agro-based startups & innovators', deadline: 'Ongoing', badge: null, color: '#e8f0ff', accent: '#1a6fff', docs: ['Incubation proposal', 'Institutional affiliation / NGO registration', 'PAN & GST'], steps: ['MSME ASPIRE portal par LBI/TBI proposal submit karein.', 'Ministry screening committee approval degi.', 'Incubation centre me free technology training aur funding provide ki jayegi.'] },
   ]
+
+  const handleVoiceSearch = () => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+    if (!SpeechRecognition) {
+      alert('Voice recognition not supported in this browser. Please type to search.')
+      return
+    }
+    const rec = new SpeechRecognition()
+    rec.lang = 'hi-IN'
+    rec.onstart = () => setIsListening(true)
+    rec.onresult = (e: any) => {
+      const text = e.results[0][0].transcript
+      setSearch(text)
+      setIsListening(false)
+    }
+    rec.onerror = () => setIsListening(false)
+    rec.onend = () => setIsListening(false)
+    rec.start()
+  }
 
   const filtered = schemes.filter(s =>
     (activeCategory === 'All' || s.category === activeCategory) &&
-    (s.name.toLowerCase().includes(search.toLowerCase()) || s.benefit.toLowerCase().includes(search.toLowerCase()))
+    (s.name.toLowerCase().includes(search.toLowerCase()) || s.benefit.toLowerCase().includes(search.toLowerCase()) || s.eligibility.toLowerCase().includes(search.toLowerCase()))
   )
 
   return (
@@ -914,9 +917,9 @@ function GovernmentSchemesPage() {
       <div className="max-w-6xl mx-auto px-4 py-10">
         <div className="mb-8">
           <h1 className="text-3xl font-semibold mb-2" style={{ fontFamily: "'Instrument Serif', serif", color: '#0d1117' }}>
-            Government Schemes
+            Government Schemes & Subsidies
           </h1>
-          <p className="text-sm" style={{ color: '#7a8799' }}>Discover 500+ government schemes, subsidies, and programs for entrepreneurs</p>
+          <p className="text-sm" style={{ color: '#7a8799' }}>Discover verified government schemes, loans, and subsidies tailored for Indian entrepreneurs</p>
         </div>
 
         {/* Search */}
@@ -925,13 +928,17 @@ function GovernmentSchemesPage() {
             <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: '#7a8799' }} />
             <input
               value={search} onChange={e => setSearch(e.target.value)}
-              placeholder="Search schemes by name or benefit..."
-              className="w-full pl-11 pr-4 py-3 rounded-xl text-sm outline-none"
+              placeholder="Search schemes (e.g., Mudra Loan, PMEGP, Subsidy, Women)..."
+              className="w-full pl-11 pr-4 py-3 rounded-xl text-sm outline-none shadow-xs"
               style={{ background: '#fff', border: '1px solid #e2e8f0', color: '#0d1117' }}
             />
           </div>
-          <button className="px-5 py-3 rounded-xl text-sm font-semibold text-white gradient-btn whitespace-nowrap">
-            🎤 Voice Search
+          <button
+            onClick={handleVoiceSearch}
+            className={`px-5 py-3 rounded-xl text-sm font-semibold text-white gradient-btn whitespace-nowrap cursor-pointer transition-all flex items-center justify-center gap-2 ${isListening ? 'animate-pulse ring-2 ring-emerald-400' : 'hover:scale-105'}`}
+          >
+            <MicIcon size={16} />
+            {isListening ? 'Listening...' : 'Voice Search'}
           </button>
         </div>
 
@@ -939,11 +946,12 @@ function GovernmentSchemesPage() {
         <div className="flex flex-wrap gap-2 mb-8">
           {categories.map(c => (
             <button key={c} onClick={() => setActiveCategory(c)}
-              className="px-4 py-2 rounded-xl text-sm font-medium transition-all"
+              className="px-4 py-2 rounded-xl text-sm font-medium transition-all cursor-pointer"
               style={{
                 background: activeCategory === c ? '#1a6fff' : '#fff',
                 color: activeCategory === c ? '#fff' : '#3d4755',
                 border: `1px solid ${activeCategory === c ? '#1a6fff' : '#e2e8f0'}`,
+                boxShadow: activeCategory === c ? '0 4px 12px rgba(26,111,255,0.2)' : 'none',
               }}>
               {c}
             </button>
@@ -953,45 +961,53 @@ function GovernmentSchemesPage() {
         {/* Schemes grid */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {filtered.map(s => (
-            <div key={s.name} className="card-hover p-6 rounded-2xl"
+            <div key={s.name} className="card-hover p-6 rounded-2xl flex flex-col justify-between"
               style={{ background: '#fff', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-              <div className="flex items-start justify-between mb-4">
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center text-xl"
-                  style={{ background: s.color }}>
-                  🏛️
+              <div>
+                <div className="flex items-start justify-between mb-4">
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center text-xl"
+                    style={{ background: s.color }}>
+                    🏛️
+                  </div>
+                  {s.badge && (
+                    <span className="px-2.5 py-1 rounded-lg text-xs font-semibold"
+                      style={{ background: s.color, color: s.accent }}>
+                      {s.badge}
+                    </span>
+                  )}
                 </div>
-                {s.badge && (
-                  <span className="px-2.5 py-1 rounded-lg text-xs font-semibold"
-                    style={{ background: s.color, color: s.accent }}>
-                    {s.badge}
-                  </span>
-                )}
+
+                <h3 className="font-semibold text-[16px] mb-1" style={{ color: '#0d1117' }}>{s.name}</h3>
+                <p className="text-xs mb-4" style={{ color: '#7a8799' }}>{s.ministry}</p>
+
+                <div className="space-y-2 mb-5">
+                  <div className="flex items-start gap-2">
+                    <span className="text-xs font-semibold w-20 shrink-0" style={{ color: '#7a8799' }}>Benefit</span>
+                    <span className="text-xs font-bold" style={{ color: s.accent }}>{s.benefit}</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-xs font-semibold w-20 shrink-0" style={{ color: '#7a8799' }}>Eligible</span>
+                    <span className="text-xs leading-relaxed" style={{ color: '#3d4755' }}>{s.eligibility}</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-xs font-semibold w-20 shrink-0" style={{ color: '#7a8799' }}>Deadline</span>
+                    <span className="text-xs font-medium" style={{ color: '#10b981' }}>{s.deadline}</span>
+                  </div>
+                </div>
               </div>
 
-              <h3 className="font-semibold text-[15px] mb-1" style={{ color: '#0d1117' }}>{s.name}</h3>
-              <p className="text-xs mb-4" style={{ color: '#7a8799' }}>{s.ministry}</p>
-
-              <div className="space-y-2 mb-5">
-                <div className="flex items-start gap-2">
-                  <span className="text-xs font-semibold w-20 shrink-0" style={{ color: '#7a8799' }}>Benefit</span>
-                  <span className="text-xs font-medium" style={{ color: s.accent }}>{s.benefit}</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="text-xs font-semibold w-20 shrink-0" style={{ color: '#7a8799' }}>Eligible</span>
-                  <span className="text-xs" style={{ color: '#3d4755' }}>{s.eligibility}</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="text-xs font-semibold w-20 shrink-0" style={{ color: '#7a8799' }}>Deadline</span>
-                  <span className="text-xs" style={{ color: '#3d4755' }}>{s.deadline}</span>
-                </div>
-              </div>
-
-              <div className="flex gap-2">
-                <button className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-white gradient-btn">
+              <div className="flex gap-2 pt-2">
+                <button
+                  onClick={() => setSelectedScheme(s)}
+                  className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-white gradient-btn cursor-pointer transition-all hover:scale-102"
+                >
                   Apply Now
                 </button>
-                <button className="px-4 py-2.5 rounded-xl text-xs font-medium border"
-                  style={{ color: '#3d4755', borderColor: '#e2e8f0' }}>
+                <button
+                  onClick={() => setSelectedScheme(s)}
+                  className="px-4 py-2.5 rounded-xl text-xs font-medium border cursor-pointer hover:bg-gray-50 transition-all"
+                  style={{ color: '#3d4755', borderColor: '#e2e8f0' }}
+                >
                   Details
                 </button>
               </div>
@@ -999,27 +1015,98 @@ function GovernmentSchemesPage() {
           ))}
         </div>
       </div>
+
+      {/* Scheme Details & Application Modal */}
+      {selectedScheme && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-100">
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-md mb-2 inline-block" style={{ background: selectedScheme.color, color: selectedScheme.accent }}>
+                  {selectedScheme.category}
+                </span>
+                <h2 className="text-2xl font-bold" style={{ color: '#0d1117' }}>{selectedScheme.name}</h2>
+                <p className="text-xs text-gray-500">{selectedScheme.ministry}</p>
+              </div>
+              <button onClick={() => setSelectedScheme(null)} className="p-2 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100 cursor-pointer">
+                ✕
+              </button>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-blue-50 border border-blue-100 mb-5">
+              <div className="text-xs font-semibold text-blue-900 mb-1">Financial Benefit / Grant</div>
+              <div className="text-lg font-bold text-blue-600">{selectedScheme.benefit}</div>
+            </div>
+
+            <div className="space-y-4 mb-6 text-xs text-gray-700">
+              <div>
+                <div className="font-bold text-gray-900 mb-1">📋 Eligibility Criteria:</div>
+                <p className="leading-relaxed bg-gray-50 p-3 rounded-xl border border-gray-100">{selectedScheme.eligibility}</p>
+              </div>
+
+              <div>
+                <div className="font-bold text-gray-900 mb-1">📄 Required Documents:</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {selectedScheme.docs?.map((d: string) => (
+                    <span key={d} className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-100 font-medium">
+                      ✓ {d}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div className="font-bold text-gray-900 mb-1">🚀 Step-by-Step Application:</div>
+                <div className="space-y-2">
+                  {selectedScheme.steps?.map((st: string, i: number) => (
+                    <div key={i} className="flex items-start gap-2 bg-gray-50 p-2.5 rounded-xl border border-gray-100">
+                      <span className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-[10px] shrink-0">{i + 1}</span>
+                      <span className="leading-relaxed">{st}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-2.5">
+              <button
+                onClick={() => { setSelectedScheme(null); navigate('voice') }}
+                className="flex-1 py-3 rounded-xl text-xs font-semibold text-white gradient-btn cursor-pointer flex items-center justify-center gap-2"
+              >
+                <MicIcon size={15} />
+                Ask GramVoice AI to Guide Application
+              </button>
+              <button
+                onClick={() => setSelectedScheme(null)}
+                className="px-5 py-3 rounded-xl text-xs font-medium border border-gray-200 hover:bg-gray-50 cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
 
 // ── Business Ideas Page ──────────────────────────────────────────────────────
-function BusinessIdeasPage() {
+function BusinessIdeasPage({ navigate }: { navigate: (p: Page) => void }) {
   const [activeFilter, setActiveFilter] = useState('All')
+  const [selectedIdea, setSelectedIdea] = useState<any | null>(null)
 
   const filters = ['All', 'Low Investment', 'Agriculture', 'Services', 'Manufacturing', 'Digital']
 
   const ideas = [
-    { title: 'Organic Fertilizer Production', category: 'Agriculture', investment: '₹20,000–50,000', profit: '₹15,000/month', difficulty: 'Easy', time: '3 months', icon: '🌱', tag: 'Low Investment', desc: 'Convert agricultural waste into organic fertilizer. High demand from local farmers.' },
-    { title: 'Mobile Repair Shop', category: 'Services', investment: '₹15,000–30,000', profit: '₹25,000/month', difficulty: 'Medium', time: '1 month', icon: '📱', tag: 'Quick Start', desc: 'Repair smartphones and accessories. Free PM Vishwakarma training available.' },
-    { title: 'Agri-Tourism Homestay', category: 'Agriculture', investment: '₹50,000–2L', profit: '₹40,000/month', difficulty: 'Medium', time: '2 months', icon: '🏡', tag: 'High Profit', desc: 'Convert your farm into a weekend tourism destination. Government subsidies available.' },
-    { title: 'Digital Literacy Center', category: 'Digital', investment: '₹30,000–80,000', profit: '₹20,000/month', difficulty: 'Easy', time: '2 months', icon: '💻', tag: 'Trending', desc: 'Teach computer and mobile skills to rural youth. CSC center funding available.' },
-    { title: 'Pickles & Papad Making', category: 'Manufacturing', investment: '₹10,000–25,000', profit: '₹12,000/month', difficulty: 'Easy', time: '1 month', icon: '🫙', tag: 'Low Investment', desc: 'Traditional food products with high demand. Sell locally and through online platforms.' },
-    { title: 'Tailoring & Embroidery', category: 'Services', investment: '₹15,000–40,000', profit: '₹18,000/month', difficulty: 'Easy', time: '2 months', icon: '🧵', tag: 'Women Friendly', desc: 'Offer custom stitching and embroidery. Skill India training programs available.' },
+    { title: 'Organic Fertilizer Production', category: 'Agriculture', investment: '₹20,000–50,000', profit: '₹15,000/month', difficulty: 'Easy', time: '3 months', icon: '🌱', tag: 'Low Investment', desc: 'Convert agricultural waste into vermicompost & organic fertilizer. High demand from local farmers.', equipment: ['Compost pit / Vermibeds', 'Organic waste / cow dung supply', 'Sieving machine / Packaging bags'], subsidy: 'PM Krishi Sinchayee Yojana & State Agriculture Subsidies (up to 40% capital grant).' },
+    { title: 'Mobile Repair Shop', category: 'Services', investment: '₹15,000–30,000', profit: '₹25,000/month', difficulty: 'Medium', time: '1 month', icon: '📱', tag: 'Quick Start', desc: 'Repair smartphones, display replacement & sell accessories. High margins on tempered glass and covers.', equipment: ['SMD rework station & soldering kit', 'Multimeter & opening tools', 'Basic accessories inventory'], subsidy: 'PM Vishwakarma / Skill India free training + ₹15,000 toolkit e-voucher.' },
+    { title: 'Agri-Tourism Homestay', category: 'Agriculture', investment: '₹50,000–2L', profit: '₹40,000/month', difficulty: 'Medium', time: '2 months', icon: '🏡', tag: 'High Profit', desc: 'Convert your farm into a weekend tourism destination for city dwellers. Offer organic meals & farming experience.', equipment: ['Clean guest rooms / tent setups', 'Village organic dining area', 'Local experience itinerary'], subsidy: 'State Tourism Board Homestay Scheme (up to ₹2 Lakh subsidy + tax exemptions).' },
+    { title: 'Digital Literacy & CSC Center', category: 'Digital', investment: '₹30,000–80,000', profit: '₹20,000/month', difficulty: 'Easy', time: '2 months', icon: '💻', tag: 'Trending', desc: 'Provide online government service applications, printing, bill payments, and basic computer training to villagers.', equipment: ['Laptop / Desktop computer', 'All-in-one printer & scanner', 'Biometric fingerprint scanner'], subsidy: 'CSC (Common Service Center) operator license with zero royalty fees.' },
+    { title: 'Pickles & Papad Making', category: 'Manufacturing', investment: '₹10,000–25,000', profit: '₹12,000/month', difficulty: 'Easy', time: '1 month', icon: '🫙', tag: 'Low Investment', desc: 'Traditional food products with high demand. Sell in local markets, kirana stores, and WhatsApp groups.', equipment: ['Food grade storage containers', 'Sealing machine', 'FSSAI basic registration'], subsidy: 'PM Formalisation of Micro Food Processing Enterprises (PMFME) - 35% subsidy.' },
+    { title: 'Custom Tailoring & Boutique', category: 'Services', investment: '₹15,000–40,000', profit: '₹18,000/month', difficulty: 'Easy', time: '2 months', icon: '🧵', tag: 'Women Friendly', desc: 'Offer custom stitching, school uniforms, and designer ethnic wear. Add embroidery services for higher margins.', equipment: ['Electric sewing machine', 'Interlocking machine', 'Fabric scissors & measuring kit'], subsidy: 'PM Mudra Shishu loan (up to ₹50,000 collateral-free at low interest).' },
   ]
 
   const filtered = activeFilter === 'All' ? ideas : ideas.filter(i => i.tag.includes(activeFilter) || i.category === activeFilter)
-
   const difficultyColor = (d: string) => d === 'Easy' ? '#10b981' : d === 'Medium' ? '#f59e0b' : '#ef4444'
 
   return (
@@ -1027,9 +1114,9 @@ function BusinessIdeasPage() {
       <div className="max-w-6xl mx-auto px-4 py-10">
         <div className="mb-8">
           <h1 className="text-3xl font-semibold mb-2" style={{ fontFamily: "'Instrument Serif', serif", color: '#0d1117' }}>
-            Business Ideas
+            Rural Business Opportunities
           </h1>
-          <p className="text-sm" style={{ color: '#7a8799' }}>Curated business opportunities matched to your location, skills, and investment capacity</p>
+          <p className="text-sm" style={{ color: '#7a8799' }}>Curated business ideas matched to your investment capacity, location, and skills</p>
         </div>
 
         {/* AI matcher card */}
@@ -1037,11 +1124,13 @@ function BusinessIdeasPage() {
           style={{ background: 'linear-gradient(135deg, #1a6fff, #0ea5e9)', boxShadow: '0 8px 30px rgba(26,111,255,0.25)' }}>
           <div>
             <div className="text-white font-semibold text-lg mb-1">Get AI-Matched Business Ideas</div>
-            <div className="text-white/75 text-sm">Tell us your budget, location & skills — get personalized ideas in 30 seconds</div>
+            <div className="text-white/80 text-sm">Tell us your budget, location & skills — GramVoice AI will create your custom roadmap!</div>
           </div>
-          <button className="flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold whitespace-nowrap transition-all hover:scale-105"
+          <button
+            onClick={() => navigate('voice')}
+            className="flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold whitespace-nowrap transition-all hover:scale-105 cursor-pointer"
             style={{ background: '#fff', color: '#1a6fff' }}>
-            <MicIcon size={16} /> Ask AI
+            <MicIcon size={16} /> Ask GramVoice AI
           </button>
         </div>
 
@@ -1049,7 +1138,7 @@ function BusinessIdeasPage() {
         <div className="flex flex-wrap gap-2 mb-8">
           {filters.map(f => (
             <button key={f} onClick={() => setActiveFilter(f)}
-              className="px-4 py-2 rounded-xl text-sm font-medium transition-all"
+              className="px-4 py-2 rounded-xl text-sm font-medium transition-all cursor-pointer"
               style={{
                 background: activeFilter === f ? '#0d1117' : '#fff',
                 color: activeFilter === f ? '#fff' : '#3d4755',
@@ -1062,7 +1151,7 @@ function BusinessIdeasPage() {
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {filtered.map(idea => (
-            <div key={idea.title} className="card-hover rounded-2xl overflow-hidden"
+            <div key={idea.title} className="card-hover rounded-2xl overflow-hidden flex flex-col justify-between"
               style={{ background: '#fff', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
               <div className="p-6">
                 <div className="flex items-start justify-between mb-3">
@@ -1072,43 +1161,121 @@ function BusinessIdeasPage() {
                     {idea.tag}
                   </span>
                 </div>
-                <h3 className="font-semibold text-[15px] mb-2" style={{ color: '#0d1117' }}>{idea.title}</h3>
+                <h3 className="font-semibold text-[16px] mb-2" style={{ color: '#0d1117' }}>{idea.title}</h3>
                 <p className="text-xs leading-relaxed mb-5" style={{ color: '#7a8799' }}>{idea.desc}</p>
 
                 <div className="grid grid-cols-2 gap-3 mb-5">
                   <div className="p-3 rounded-xl" style={{ background: '#f7f9fc' }}>
-                    <div className="text-xs mb-0.5" style={{ color: '#7a8799' }}>Investment</div>
-                    <div className="text-xs font-semibold" style={{ color: '#0d1117' }}>{idea.investment}</div>
+                    <div className="text-[11px] mb-0.5 font-medium" style={{ color: '#7a8799' }}>Investment</div>
+                    <div className="text-xs font-bold" style={{ color: '#0d1117' }}>{idea.investment}</div>
                   </div>
                   <div className="p-3 rounded-xl" style={{ background: '#d1fae5' }}>
-                    <div className="text-xs mb-0.5" style={{ color: '#059669' }}>Avg. Profit</div>
-                    <div className="text-xs font-semibold" style={{ color: '#059669' }}>{idea.profit}</div>
+                    <div className="text-[11px] mb-0.5 font-medium" style={{ color: '#059669' }}>Avg. Profit</div>
+                    <div className="text-xs font-bold" style={{ color: '#059669' }}>{idea.profit}</div>
                   </div>
                 </div>
 
                 <div className="flex items-center justify-between mb-5">
                   <div className="flex items-center gap-1.5">
-                    <div className="w-1.5 h-1.5 rounded-full" style={{ background: difficultyColor(idea.difficulty) }} />
-                    <span className="text-xs font-medium" style={{ color: difficultyColor(idea.difficulty) }}>{idea.difficulty}</span>
+                    <div className="w-2 h-2 rounded-full" style={{ background: difficultyColor(idea.difficulty) }} />
+                    <span className="text-xs font-semibold" style={{ color: difficultyColor(idea.difficulty) }}>{idea.difficulty}</span>
                   </div>
-                  <span className="text-xs" style={{ color: '#7a8799' }}>⏱ {idea.time} to start</span>
+                  <span className="text-xs font-medium" style={{ color: '#7a8799' }}>⏱ {idea.time} to start</span>
                 </div>
+              </div>
 
-                <button className="w-full py-2.5 rounded-xl text-xs font-semibold text-white gradient-btn">
-                  Explore This Idea
+              <div className="px-6 pb-6">
+                <button
+                  onClick={() => setSelectedIdea(idea)}
+                  className="w-full py-2.5 rounded-xl text-xs font-semibold text-white gradient-btn cursor-pointer transition-all hover:scale-102"
+                >
+                  Explore Complete Business Plan
                 </button>
               </div>
             </div>
           ))}
         </div>
       </div>
+
+      {/* Idea Plan Modal */}
+      {selectedIdea && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-100">
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <span className="text-3xl">{selectedIdea.icon}</span>
+                <div>
+                  <h2 className="text-2xl font-bold" style={{ color: '#0d1117' }}>{selectedIdea.title}</h2>
+                  <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">{selectedIdea.category}</span>
+                </div>
+              </div>
+              <button onClick={() => setSelectedIdea(null)} className="p-2 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100 cursor-pointer">
+                ✕
+              </button>
+            </div>
+
+            <p className="text-xs text-gray-600 mb-5 leading-relaxed bg-gray-50 p-3.5 rounded-xl">{selectedIdea.desc}</p>
+
+            <div className="grid grid-cols-2 gap-3 mb-5">
+              <div className="p-3.5 rounded-2xl bg-blue-50 border border-blue-100">
+                <div className="text-[11px] font-semibold text-blue-700 mb-0.5">Required Capital</div>
+                <div className="text-sm font-bold text-blue-900">{selectedIdea.investment}</div>
+              </div>
+              <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-100">
+                <div className="text-[11px] font-semibold text-emerald-700 mb-0.5">Expected Income</div>
+                <div className="text-sm font-bold text-emerald-900">{selectedIdea.profit}</div>
+              </div>
+            </div>
+
+            <div className="space-y-4 mb-6 text-xs text-gray-700">
+              <div>
+                <div className="font-bold text-gray-900 mb-1">🛠️ Necessary Equipment & Tools:</div>
+                <div className="space-y-1.5">
+                  {selectedIdea.equipment?.map((eq: string) => (
+                    <div key={eq} className="flex items-center gap-2 bg-gray-50 p-2 rounded-lg border border-gray-100">
+                      <span className="text-blue-500 font-bold">✓</span>
+                      <span>{eq}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div className="font-bold text-gray-900 mb-1">🏛️ Applicable Government Schemes & Subsidies:</div>
+                <p className="p-3 rounded-xl bg-amber-50 text-amber-900 border border-amber-200/70 leading-relaxed font-medium">
+                  {selectedIdea.subsidy}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-2.5">
+              <button
+                onClick={() => { setSelectedIdea(null); navigate('voice') }}
+                className="flex-1 py-3 rounded-xl text-xs font-semibold text-white gradient-btn cursor-pointer flex items-center justify-center gap-2"
+              >
+                <MicIcon size={15} />
+                Generate Launch Roadmap with AI
+              </button>
+              <button
+                onClick={() => setSelectedIdea(null)}
+                className="px-5 py-3 rounded-xl text-xs font-medium border border-gray-200 hover:bg-gray-50 cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
 
 // ── Mentor Page ───────────────────────────────────────────────────────────────
-function MentorPage() {
+function MentorPage({ navigate }: { navigate: (p: Page) => void }) {
   const [activeType, setActiveType] = useState('All')
+  const [bookingMentor, setBookingMentor] = useState<any | null>(null)
+  const [bookedSuccess, setBookedSuccess] = useState<string | null>(null)
+  const [selectedDate, setSelectedDate] = useState('Kal (Tomorrow, 11:00 AM)')
 
   const types = ['All', 'Business', 'Finance', 'Marketing', 'Agriculture', 'Technology']
 
@@ -1123,21 +1290,29 @@ function MentorPage() {
 
   const filtered = activeType === 'All' ? mentors : mentors.filter(m => m.type === activeType)
 
+  const handleConfirmBooking = () => {
+    setBookedSuccess(bookingMentor?.name)
+    setTimeout(() => {
+      setBookedSuccess(null)
+      setBookingMentor(null)
+    }, 2800)
+  }
+
   return (
     <div className="min-h-screen pt-16" style={{ background: '#f7f9fc' }}>
       <div className="max-w-6xl mx-auto px-4 py-10">
         <div className="mb-8">
           <h1 className="text-3xl font-semibold mb-2" style={{ fontFamily: "'Instrument Serif', serif", color: '#0d1117' }}>
-            Find a Mentor
+            Verified Business Mentors
           </h1>
-          <p className="text-sm" style={{ color: '#7a8799' }}>Connect with verified expert mentors who understand rural and semi-urban business challenges</p>
+          <p className="text-sm" style={{ color: '#7a8799' }}>Connect 1-on-1 with experienced mentors who understand rural business growth and compliance</p>
         </div>
 
         {/* Types */}
         <div className="flex flex-wrap gap-2 mb-8">
           {types.map(t => (
             <button key={t} onClick={() => setActiveType(t)}
-              className="px-4 py-2 rounded-xl text-sm font-medium transition-all"
+              className="px-4 py-2 rounded-xl text-sm font-medium transition-all cursor-pointer"
               style={{
                 background: activeType === t ? '#1a6fff' : '#fff',
                 color: activeType === t ? '#fff' : '#3d4755',
@@ -1150,66 +1325,151 @@ function MentorPage() {
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {filtered.map(m => (
-            <div key={m.name} className="card-hover rounded-2xl overflow-hidden"
+            <div key={m.name} className="card-hover rounded-2xl overflow-hidden flex flex-col justify-between"
               style={{ background: '#fff', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-              <div className="h-2 w-full" style={{ background: `linear-gradient(to right, ${m.accent}, ${m.accent}88)` }} />
-              <div className="p-6">
-                <div className="flex items-start gap-4 mb-4">
-                  <img
-                    src={`https://images.unsplash.com/${m.img}?w=80&h=80&fit=crop&auto=format`}
-                    alt={m.name}
-                    className="w-14 h-14 rounded-2xl object-cover shrink-0"
-                    style={{ border: `2px solid ${m.color}` }}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-[15px] truncate" style={{ color: '#0d1117' }}>{m.name}</div>
-                    <div className="text-xs mb-1.5 leading-tight" style={{ color: '#7a8799' }}>{m.title}</div>
-                    <div className="flex items-center gap-1">
-                      <span className="text-yellow-400 text-xs">★</span>
-                      <span className="text-xs font-semibold" style={{ color: '#0d1117' }}>{m.rating}</span>
-                      <span className="text-xs" style={{ color: '#7a8799' }}>· {m.sessions} sessions</span>
+              <div>
+                <div className="h-2 w-full" style={{ background: `linear-gradient(to right, ${m.accent}, ${m.accent}88)` }} />
+                <div className="p-6">
+                  <div className="flex items-start gap-4 mb-4">
+                    <img
+                      src={`https://images.unsplash.com/${m.img}?w=80&h=80&fit=crop&auto=format`}
+                      alt={m.name}
+                      className="w-14 h-14 rounded-2xl object-cover shrink-0"
+                      style={{ border: `2px solid ${m.color}` }}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-[15px] truncate" style={{ color: '#0d1117' }}>{m.name}</div>
+                      <div className="text-xs mb-1.5 leading-tight" style={{ color: '#7a8799' }}>{m.title}</div>
+                      <div className="flex items-center gap-1">
+                        <span className="text-yellow-400 text-xs">★</span>
+                        <span className="text-xs font-bold" style={{ color: '#0d1117' }}>{m.rating}</span>
+                        <span className="text-xs" style={{ color: '#7a8799' }}>· {m.sessions} sessions</span>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="grid grid-cols-2 gap-2 mb-4">
-                  <div className="p-2.5 rounded-lg text-center" style={{ background: '#f7f9fc' }}>
-                    <div className="text-xs font-semibold" style={{ color: '#0d1117' }}>{m.exp}</div>
-                    <div className="text-[10px]" style={{ color: '#7a8799' }}>Experience</div>
+                  <div className="grid grid-cols-2 gap-2 mb-4">
+                    <div className="p-2.5 rounded-xl text-center" style={{ background: '#f7f9fc' }}>
+                      <div className="text-xs font-bold" style={{ color: '#0d1117' }}>{m.exp}</div>
+                      <div className="text-[10px] text-gray-500">Experience</div>
+                    </div>
+                    <div className="p-2.5 rounded-xl text-center" style={{ background: '#f7f9fc' }}>
+                      <div className="text-xs font-bold truncate" style={{ color: '#0d1117' }}>{m.location.split(',')[1]?.trim() || m.location}</div>
+                      <div className="text-[10px] text-gray-500">Location</div>
+                    </div>
                   </div>
-                  <div className="p-2.5 rounded-lg text-center" style={{ background: '#f7f9fc' }}>
-                    <div className="text-xs font-semibold truncate" style={{ color: '#0d1117' }}>{m.location.split(',')[1].trim()}</div>
-                    <div className="text-[10px]" style={{ color: '#7a8799' }}>Location</div>
+
+                  <div className="flex flex-wrap gap-1.5 mb-4">
+                    {m.tags.map(t => (
+                      <span key={t} className="px-2 py-0.5 rounded-md text-[10px] font-semibold"
+                        style={{ background: m.color, color: m.accent }}>
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+
+                  <div className="text-xs mb-4" style={{ color: '#7a8799' }}>
+                    Speaks: <span style={{ color: '#3d4755', fontWeight: 600 }}>{m.languages.join(', ')}</span>
                   </div>
                 </div>
+              </div>
 
-                <div className="flex flex-wrap gap-1.5 mb-4">
-                  {m.tags.map(t => (
-                    <span key={t} className="px-2 py-0.5 rounded-md text-[10px] font-medium"
-                      style={{ background: m.color, color: m.accent }}>
-                      {t}
-                    </span>
-                  ))}
-                </div>
-
-                <div className="text-xs mb-4" style={{ color: '#7a8799' }}>
-                  Speaks: <span style={{ color: '#3d4755', fontWeight: 500 }}>{m.languages.join(', ')}</span>
-                </div>
-
-                <div className="flex gap-2">
-                  <button className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-white gradient-btn">
-                    Book Session
-                  </button>
-                  <button className="px-4 py-2.5 rounded-xl text-xs font-medium border"
-                    style={{ color: '#3d4755', borderColor: '#e2e8f0' }}>
-                    Chat
-                  </button>
-                </div>
+              <div className="px-6 pb-6 flex gap-2">
+                <button
+                  onClick={() => setBookingMentor(m)}
+                  className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-white gradient-btn cursor-pointer transition-all hover:scale-102"
+                >
+                  Book 1-on-1 Session
+                </button>
+                <button
+                  onClick={() => navigate('voice')}
+                  className="px-4 py-2.5 rounded-xl text-xs font-semibold border cursor-pointer hover:bg-gray-50 transition-all"
+                  style={{ color: '#3d4755', borderColor: '#e2e8f0' }}
+                >
+                  AI Chat
+                </button>
               </div>
             </div>
           ))}
         </div>
       </div>
+
+      {/* Booking Session Modal */}
+      {bookingMentor && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-gray-100">
+            {bookedSuccess ? (
+              <div className="text-center py-6">
+                <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-4">
+                  ✓
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Session Booked Successfully!</h3>
+                <p className="text-xs text-gray-600 mb-4">
+                  Aapka 1-on-1 consultation session with <strong>{bookedSuccess}</strong> confirm ho gaya hai. Meeting link SMS & WhatsApp par bhej di gayi hai.
+                </p>
+                <div className="p-3 bg-emerald-50 text-emerald-800 rounded-xl text-xs font-semibold">
+                  📅 Slot: {selectedDate}
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <img src={`https://images.unsplash.com/${bookingMentor.img}?w=50&h=50&fit=crop&auto=format`} alt={bookingMentor.name} className="w-12 h-12 rounded-xl object-cover" />
+                    <div>
+                      <h3 className="font-bold text-base text-gray-900">{bookingMentor.name}</h3>
+                      <p className="text-xs text-gray-500">{bookingMentor.title}</p>
+                    </div>
+                  </div>
+                  <button onClick={() => setBookingMentor(null)} className="p-2 text-gray-400 hover:text-gray-700 cursor-pointer">✕</button>
+                </div>
+
+                <div className="space-y-4 mb-6 text-xs">
+                  <div>
+                    <label className="block font-bold text-gray-700 mb-1.5">Select Preferred Date & Time:</label>
+                    <select
+                      value={selectedDate}
+                      onChange={e => setSelectedDate(e.target.value)}
+                      className="w-full p-3 rounded-xl border border-gray-200 outline-none text-xs bg-gray-50 font-medium"
+                    >
+                      <option>Kal (Tomorrow) — 11:00 AM to 11:30 AM</option>
+                      <option>Kal (Tomorrow) — 04:00 PM to 04:30 PM</option>
+                      <option>Parso (Day after tomorrow) — 10:00 AM to 10:30 AM</option>
+                      <option>Is Shanivar (Saturday) — 02:00 PM to 02:30 PM</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-gray-700 mb-1.5">Apna Sawaal ya Business Topic likhein:</label>
+                    <input
+                      placeholder="e.g. Mudra Loan eligibility, GST registration, WhatsApp sales..."
+                      className="w-full p-3 rounded-xl border border-gray-200 outline-none text-xs"
+                      defaultValue="Mudra loan application & business registration advice"
+                    />
+                  </div>
+
+                  <div className="p-3 bg-blue-50 text-blue-800 rounded-xl border border-blue-100 flex items-center justify-between">
+                    <span>Consultation Fee:</span>
+                    <span className="font-bold text-emerald-600">FREE (Under GramVoice Initiative)</span>
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleConfirmBooking}
+                    className="flex-1 py-3 rounded-xl text-xs font-semibold text-white gradient-btn cursor-pointer hover:scale-102 transition-all"
+                  >
+                    Confirm Booking
+                  </button>
+                  <button onClick={() => setBookingMentor(null)} className="px-4 py-3 rounded-xl text-xs font-medium border border-gray-200 hover:bg-gray-50 cursor-pointer">
+                    Cancel
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -1231,10 +1491,10 @@ function DashboardPage({ navigate }: { navigate: (p: Page) => void }) {
   ]
 
   const categories = [
-    { label: 'Registration', icon: '📋', count: 24, color: '#e8f0ff', accent: '#1a6fff' },
-    { label: 'Loans & Finance', icon: '💰', count: 38, color: '#d1fae5', accent: '#10b981' },
-    { label: 'Marketing', icon: '📣', count: 19, color: '#fce7f3', accent: '#ec4899' },
-    { label: 'Government', icon: '🏛️', count: 52, color: '#fef3c7', accent: '#f59e0b' },
+    { label: 'Registration', icon: '📋', count: 24, color: '#e8f0ff', accent: '#1a6fff', page: 'voice' as Page },
+    { label: 'Loans & Finance', icon: '💰', count: 38, color: '#d1fae5', accent: '#10b981', page: 'schemes' as Page },
+    { label: 'Marketing', icon: '📣', count: 19, color: '#fce7f3', accent: '#ec4899', page: 'voice' as Page },
+    { label: 'Government', icon: '🏛️', count: 52, color: '#fef3c7', accent: '#f59e0b', page: 'schemes' as Page },
   ]
 
   const stats = [
@@ -1252,13 +1512,13 @@ function DashboardPage({ navigate }: { navigate: (p: Page) => void }) {
           <div>
             <div className="text-xs font-semibold mb-1 gradient-text uppercase tracking-widest">Dashboard</div>
             <h1 className="text-2xl font-semibold" style={{ fontFamily: "'Instrument Serif', serif", color: '#0d1117' }}>
-              Welcome back, Ramesh! 👋
+              Welcome back, Entrepreneur! 👋
             </h1>
-            <p className="text-sm mt-1" style={{ color: '#7a8799' }}>Your kirana business is growing — here's what's new today.</p>
+            <p className="text-sm mt-1" style={{ color: '#7a8799' }}>Your business analytics and government assistance tracker</p>
           </div>
           <button onClick={() => navigate('voice')}
-            className="flex items-center gap-2.5 px-5 py-3 rounded-xl text-sm font-semibold text-white gradient-btn">
-            <MicIcon size={16} /> Ask a Question
+            className="flex items-center gap-2.5 px-5 py-3 rounded-xl text-sm font-semibold text-white gradient-btn cursor-pointer transition-all hover:scale-105">
+            <MicIcon size={16} /> Ask GramVoice AI
           </button>
         </div>
 
@@ -1269,7 +1529,7 @@ function DashboardPage({ navigate }: { navigate: (p: Page) => void }) {
               <div className="text-2xl font-bold mb-1" style={{ color: '#0d1117' }}>{s.value}</div>
               <div className="text-xs font-medium mb-1.5" style={{ color: '#7a8799' }}>{s.label}</div>
               <div className="flex items-center gap-1">
-                <span className="text-xs" style={{ color: s.up ? '#10b981' : '#f59e0b' }}>
+                <span className="text-xs font-semibold" style={{ color: s.up ? '#10b981' : '#f59e0b' }}>
                   {s.up ? '↑' : '→'} {s.change}
                 </span>
               </div>
@@ -1284,18 +1544,18 @@ function DashboardPage({ navigate }: { navigate: (p: Page) => void }) {
             <div className="p-6 rounded-2xl" style={{ background: '#fff', border: '1px solid #e2e8f0' }}>
               <div className="flex items-center justify-between mb-5">
                 <h2 className="font-semibold" style={{ color: '#0d1117' }}>Recent Questions</h2>
-                <button className="text-xs font-medium" style={{ color: '#1a6fff' }}>View All</button>
+                <button onClick={() => navigate('voice')} className="text-xs font-semibold cursor-pointer" style={{ color: '#1a6fff' }}>Open Voice Assistant</button>
               </div>
               <div className="flex flex-col gap-3">
                 {recentQuestions.map((q, i) => (
-                  <div key={i} className="flex items-start gap-3 p-3.5 rounded-xl transition-all hover:bg-gray-50"
+                  <div key={i} onClick={() => navigate('voice')} className="flex items-start gap-3 p-3.5 rounded-xl transition-all hover:bg-blue-50/50 cursor-pointer"
                     style={{ border: '1px solid #e2e8f0' }}>
                     <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5"
                       style={{ background: '#d1fae5' }}>
                       <CheckIcon size={13} className="text-green-600" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm leading-snug" style={{ color: '#0d1117' }}>{q.q}</p>
+                      <p className="text-sm leading-snug font-medium" style={{ color: '#0d1117' }}>{q.q}</p>
                       <p className="text-xs mt-1" style={{ color: '#7a8799' }}>{q.time}</p>
                     </div>
                     <ChevronRight size={14} className="shrink-0 mt-1" style={{ color: '#7a8799' }} />
@@ -1309,12 +1569,12 @@ function DashboardPage({ navigate }: { navigate: (p: Page) => void }) {
               <h2 className="font-semibold mb-5" style={{ color: '#0d1117' }}>Explore by Category</h2>
               <div className="grid grid-cols-2 gap-3">
                 {categories.map(c => (
-                  <div key={c.label} className="card-hover p-4 rounded-xl cursor-pointer flex items-center gap-3"
+                  <div key={c.label} onClick={() => navigate(c.page)} className="card-hover p-4 rounded-xl cursor-pointer flex items-center gap-3 transition-all hover:scale-[1.02]"
                     style={{ background: c.color, border: `1px solid ${c.accent}22` }}>
                     <span className="text-2xl">{c.icon}</span>
                     <div>
                       <div className="text-sm font-semibold" style={{ color: c.accent }}>{c.label}</div>
-                      <div className="text-xs" style={{ color: c.accent + 'aa' }}>{c.count} articles</div>
+                      <div className="text-xs" style={{ color: c.accent + 'aa' }}>{c.count} resources</div>
                     </div>
                   </div>
                 ))}
@@ -1328,11 +1588,11 @@ function DashboardPage({ navigate }: { navigate: (p: Page) => void }) {
             <div className="p-6 rounded-2xl" style={{ background: '#fff', border: '1px solid #e2e8f0' }}>
               <div className="flex items-center justify-between mb-5">
                 <h2 className="font-semibold" style={{ color: '#0d1117' }}>Trending Schemes</h2>
-                <button onClick={() => navigate('schemes')} className="text-xs font-medium" style={{ color: '#1a6fff' }}>View All</button>
+                <button onClick={() => navigate('schemes')} className="text-xs font-semibold cursor-pointer" style={{ color: '#1a6fff' }}>View All</button>
               </div>
               <div className="flex flex-col gap-3">
                 {trendingSchemes.map((s, i) => (
-                  <div key={s.name} className="flex items-center gap-3">
+                  <div key={s.name} onClick={() => navigate('schemes')} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 cursor-pointer">
                     <span className="text-xs font-bold w-4" style={{ color: '#7a8799' }}>{i + 1}</span>
                     <div className="flex-1">
                       <div className="text-sm font-medium" style={{ color: '#0d1117' }}>{s.name}</div>
@@ -1350,13 +1610,13 @@ function DashboardPage({ navigate }: { navigate: (p: Page) => void }) {
             <div className="p-6 rounded-2xl" style={{ background: '#fff', border: '1px solid #e2e8f0' }}>
               <div className="flex items-center justify-between mb-5">
                 <h2 className="font-semibold" style={{ color: '#0d1117' }}>Recommended Mentors</h2>
-                <button onClick={() => navigate('mentor')} className="text-xs font-medium" style={{ color: '#1a6fff' }}>See All</button>
+                <button onClick={() => navigate('mentor')} className="text-xs font-semibold cursor-pointer" style={{ color: '#1a6fff' }}>See All</button>
               </div>
               {[
                 { name: 'Priya Sharma', role: 'Business Strategy', img: 'photo-1494790108377-be9c29b29330', rating: 4.9 },
                 { name: 'Ramesh Nair', role: 'Finance Expert', img: 'photo-1507003211169-0a1dd7228f2d', rating: 4.8 },
               ].map(m => (
-                <div key={m.name} className="flex items-center gap-3 mb-4 last:mb-0">
+                <div key={m.name} onClick={() => navigate('mentor')} className="flex items-center gap-3 mb-4 last:mb-0 p-2 rounded-lg hover:bg-gray-50 cursor-pointer">
                   <img src={`https://images.unsplash.com/${m.img}?w=48&h=48&fit=crop&auto=format`}
                     alt={m.name} className="w-10 h-10 rounded-xl object-cover" />
                   <div className="flex-1">
@@ -1366,7 +1626,7 @@ function DashboardPage({ navigate }: { navigate: (p: Page) => void }) {
                   <div className="text-xs font-semibold text-yellow-500">★ {m.rating}</div>
                 </div>
               ))}
-              <button className="w-full mt-2 py-2.5 rounded-xl text-xs font-semibold border transition-all hover:bg-gray-50"
+              <button className="w-full mt-2 py-2.5 rounded-xl text-xs font-semibold border transition-all hover:bg-gray-50 cursor-pointer"
                 style={{ color: '#1a6fff', borderColor: '#bfdbfe' }} onClick={() => navigate('mentor')}>
                 Find More Mentors
               </button>
@@ -1379,9 +1639,9 @@ function DashboardPage({ navigate }: { navigate: (p: Page) => void }) {
                 <MicIcon size={22} className="text-white" />
               </div>
               <div className="text-white font-semibold mb-1">Ask Anything</div>
-              <div className="text-white/70 text-xs mb-4">Voice-enabled · 18 languages</div>
+              <div className="text-white/80 text-xs mb-4">Voice-enabled · Hindi & English</div>
               <button onClick={() => navigate('voice')}
-                className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-all hover:scale-105"
+                className="px-5 py-2.5 rounded-xl text-sm font-semibold transition-all hover:scale-105 cursor-pointer shadow-lg"
                 style={{ background: '#fff', color: '#1a6fff' }}>
                 Start Speaking
               </button>
@@ -1397,16 +1657,16 @@ function DashboardPage({ navigate }: { navigate: (p: Page) => void }) {
 function AboutPage({ navigate }: { navigate: (p: Page) => void }) {
   const team = [
     { name: 'Arjun Mehra', role: 'Founder & CEO', bio: 'Former IIT Bombay grad with 8 years in rural fintech. Passionate about bridging India\'s digital divide.', img: 'photo-1500648767791-00dcc994a43e' },
-    { name: 'Sneha Patel', role: 'CTO & AI Lead', bio: 'Google AI alumni, led NLP projects for 10+ Indian languages. Expert in voice-AI for low-bandwidth environments.', img: 'photo-1544005313-94ddf0286df2' },
+    { name: 'Sneha Patel', role: 'CTO & AI Lead', bio: 'AI researcher and NLP engineer for Indian regional languages. Expert in voice-AI for rural business scalability.', img: 'photo-1544005313-94ddf0286df2' },
     { name: 'Vikram Singh', role: 'Head of Partnerships', bio: 'Ex-NABARD, built partnerships with 200+ NGOs and government bodies across 18 states.', img: 'photo-1472099645785-5658abf4ff4e' },
   ]
 
   const milestones = [
-    { year: 'Jan 2023', event: 'Founded in Jaipur with seed funding of ₹2.5 Crore', icon: '🌱' },
-    { year: 'Jun 2023', event: 'Launched pilot in 3 districts of Rajasthan with 5,000 users', icon: '🚀' },
-    { year: 'Dec 2023', event: 'Series A: ₹18 Crore raised. Expanded to 6 states', icon: '💰' },
-    { year: 'Apr 2024', event: 'Crossed 1 Lakh active users. Added 12 regional languages', icon: '🎯' },
-    { year: 'Jan 2025', event: '2.4 Lakh entrepreneurs. MoU with Ministry of MSME', icon: '🏛️' },
+    { year: 'Jan 2023', event: 'Founded with a mission to empower rural Indian grassroots entrepreneurs', icon: '🌱' },
+    { year: 'Jun 2023', event: 'Launched pilot across rural districts with over 5,000 active rural users', icon: '🚀' },
+    { year: 'Dec 2023', event: 'Expanded voice AI dialect dataset to 18 regional Indian languages', icon: '🗣️' },
+    { year: 'Apr 2024', event: 'Crossed 1 Lakh active entrepreneurs with daily voice assistance', icon: '🎯' },
+    { year: 'Jan 2025', event: 'Partnered with rural business incubators & verified MSME experts', icon: '🏛️' },
   ]
 
   return (
@@ -1423,7 +1683,7 @@ function AboutPage({ navigate }: { navigate: (p: Page) => void }) {
             <span className="gradient-text italic">One Voice at a Time</span>
           </h1>
           <p className="text-lg leading-relaxed mx-auto" style={{ color: '#3d4755', maxWidth: 560 }}>
-            GramVoice AI believes that language and literacy should never be barriers to building a business. We're democratizing access to business knowledge for 300 million rural entrepreneurs across India.
+            GramVoice AI believes that language and literacy should never be barriers to building a business. We're democratizing access to business knowledge, government schemes, and financial guidance for rural entrepreneurs across India.
           </p>
         </div>
       </section>
@@ -1433,9 +1693,9 @@ function AboutPage({ navigate }: { navigate: (p: Page) => void }) {
         <div className="max-w-5xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-6">
           {[
             { value: '2.4L+', label: 'Entrepreneurs Served' },
-            { value: '18', label: 'Languages Supported' },
+            { value: '18', label: 'Languages & Dialects' },
             { value: '22', label: 'States Covered' },
-            { value: '₹18Cr', label: 'Series A Raised' },
+            { value: '100%', label: 'Free Voice Access' },
           ].map(s => (
             <div key={s.label} className="p-6 rounded-2xl text-center card-hover"
               style={{ background: '#f7f9fc', border: '1px solid #e2e8f0' }}>
@@ -1499,14 +1759,14 @@ function AboutPage({ navigate }: { navigate: (p: Page) => void }) {
           <h2 className="text-3xl font-semibold mb-4" style={{ fontFamily: "'Instrument Serif', serif", color: '#0d1117' }}>
             Join the Movement
           </h2>
-          <p className="mb-8" style={{ color: '#7a8799' }}>Ready to start or grow your business? GramVoice AI is free for rural entrepreneurs.</p>
+          <p className="mb-8" style={{ color: '#7a8799' }}>Ready to start or grow your business? GramVoice AI is free for all rural entrepreneurs.</p>
           <div className="flex flex-wrap justify-center gap-3">
             <button onClick={() => navigate('voice')}
-              className="flex items-center gap-2 px-6 py-3.5 rounded-2xl text-white text-sm font-semibold gradient-btn">
+              className="flex items-center gap-2 px-6 py-3.5 rounded-2xl text-white text-sm font-semibold gradient-btn cursor-pointer">
               <MicIcon size={16} /> Try Voice Assistant
             </button>
             <button onClick={() => navigate('schemes')}
-              className="flex items-center gap-2 px-6 py-3.5 rounded-2xl text-sm font-semibold border-2 hover:bg-gray-50 transition-all"
+              className="flex items-center gap-2 px-6 py-3.5 rounded-2xl text-sm font-semibold border-2 hover:bg-gray-50 transition-all cursor-pointer"
               style={{ color: '#3d4755', borderColor: '#e2e8f0' }}>
               Browse Schemes <ChevronRight size={14} />
             </button>
@@ -1526,50 +1786,53 @@ function Footer({ navigate }: { navigate: (p: Page) => void }) {
       <div className="max-w-7xl mx-auto">
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-10">
           <div>
-            <div className="flex items-center gap-2.5 mb-4">
+            <div className="flex items-center gap-2.5 mb-4 cursor-pointer" onClick={() => navigate('landing')}>
               <div className="w-8 h-8 rounded-xl gradient-btn flex items-center justify-center">
                 <MicIcon size={16} className="text-white" />
               </div>
               <span className="font-semibold text-white">GramVoice AI</span>
             </div>
             <p className="text-sm leading-relaxed" style={{ color: '#6b7a8d' }}>
-              AI-powered voice assistant helping rural India build better businesses.
+              Voice-first AI platform empowering rural entrepreneurs across India in their local language.
             </p>
-            <div className="flex items-center gap-3 mt-5">
-              {['GitHub', 'LinkedIn', 'Twitter'].map(s => (
-                <a key={s} href="#" className="text-xs px-3 py-1.5 rounded-lg transition-all hover:bg-white/10"
-                  style={{ color: '#6b7a8d', border: '1px solid #1e2a3a' }}>
-                  {s}
-                </a>
-              ))}
+          </div>
+
+          <div>
+            <div className="text-xs font-semibold mb-4 uppercase tracking-widest" style={{ color: '#4a5568' }}>Features</div>
+            <div className="flex flex-col gap-2.5">
+              <button onClick={() => navigate('voice')} className="text-sm text-left transition-colors hover:text-white cursor-pointer" style={{ color: '#6b7a8d' }}>Voice Assistant</button>
+              <button onClick={() => navigate('schemes')} className="text-sm text-left transition-colors hover:text-white cursor-pointer" style={{ color: '#6b7a8d' }}>Government Schemes</button>
+              <button onClick={() => navigate('ideas')} className="text-sm text-left transition-colors hover:text-white cursor-pointer" style={{ color: '#6b7a8d' }}>Business Ideas</button>
+              <button onClick={() => navigate('mentor')} className="text-sm text-left transition-colors hover:text-white cursor-pointer" style={{ color: '#6b7a8d' }}>Expert Mentors</button>
             </div>
           </div>
 
-          {[
-            { title: 'Product', links: ['Voice Assistant', 'Government Schemes', 'Business Ideas', 'Find Mentor'] },
-            { title: 'Resources', links: ['Documentation', 'API Access', 'Blog', 'Case Studies'] },
-            { title: 'Company', links: ['About Us', 'Careers', 'Press', 'Contact'] },
-          ].map(col => (
-            <div key={col.title}>
-              <div className="text-xs font-semibold mb-4 uppercase tracking-widest" style={{ color: '#4a5568' }}>{col.title}</div>
-              <div className="flex flex-col gap-2.5">
-                {col.links.map(link => (
-                  <a key={link} href="#" className="text-sm transition-colors hover:text-white" style={{ color: '#6b7a8d' }}>
-                    {link}
-                  </a>
-                ))}
-              </div>
+          <div>
+            <div className="text-xs font-semibold mb-4 uppercase tracking-widest" style={{ color: '#4a5568' }}>Platform</div>
+            <div className="flex flex-col gap-2.5">
+              <button onClick={() => navigate('dashboard')} className="text-sm text-left transition-colors hover:text-white cursor-pointer" style={{ color: '#6b7a8d' }}>User Dashboard</button>
+              <button onClick={() => navigate('about')} className="text-sm text-left transition-colors hover:text-white cursor-pointer" style={{ color: '#6b7a8d' }}>About GramVoice</button>
+              <a href="#features" onClick={() => navigate('landing')} className="text-sm transition-colors hover:text-white cursor-pointer" style={{ color: '#6b7a8d' }}>Technology & Privacy</a>
             </div>
-          ))}
+          </div>
+
+          <div>
+            <div className="text-xs font-semibold mb-4 uppercase tracking-widest" style={{ color: '#4a5568' }}>Direct Voice Help</div>
+            <p className="text-xs leading-relaxed mb-3" style={{ color: '#6b7a8d' }}>
+              Got business questions or scheme inquiries? Just speak in Hindi or English.
+            </p>
+            <button onClick={() => navigate('voice')}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold text-white gradient-btn cursor-pointer transition-all hover:scale-105">
+              <MicIcon size={14} /> Start Voice Chat
+            </button>
+          </div>
         </div>
 
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4"
           style={{ borderTop: '1px solid #1e2a3a' }}>
-          <p className="text-xs" style={{ color: '#4a5568' }}>© 2025 GramVoice AI. Made with ❤️ for Rural India.</p>
+          <p className="text-xs" style={{ color: '#4a5568' }}>© 2025 GramVoice AI. Built for Rural Entrepreneurship.</p>
           <div className="flex gap-4">
-            {['Privacy Policy', 'Terms of Service', 'Accessibility'].map(l => (
-              <a key={l} href="#" className="text-xs transition-colors hover:text-white" style={{ color: '#4a5568' }}>{l}</a>
-            ))}
+            <span className="text-xs" style={{ color: '#4a5568' }}>100% Free & Open Access</span>
           </div>
         </div>
       </div>
@@ -1580,37 +1843,6 @@ function Footer({ navigate }: { navigate: (p: Page) => void }) {
 // ── App ───────────────────────────────────────────────────────────────────────
 export default function App() {
   const [page, setPage] = useState<Page>('landing')
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
-  const [isInstalled, setIsInstalled] = useState(false)
-
-  useEffect(() => {
-    const handleBeforeInstallPrompt = (e: any) => {
-      e.preventDefault()
-      setDeferredPrompt(e)
-    }
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
-    window.addEventListener('appinstalled', () => {
-      setIsInstalled(true)
-      setDeferredPrompt(null)
-    })
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
-    }
-  }, [])
-
-  const handleInstallClick = async () => {
-    if (deferredPrompt) {
-      deferredPrompt.prompt()
-      const { outcome } = await deferredPrompt.userChoice
-      if (outcome === 'accepted') {
-        setDeferredPrompt(null)
-      }
-    } else {
-      alert('Mobile browser menu (⋮ ya Share button) me jakar "Add to Home Screen" / "Install App" par tap karein.')
-    }
-  }
 
   const navigate = (p: Page) => {
     setPage(p)
@@ -1621,9 +1853,9 @@ export default function App() {
     switch (page) {
       case 'landing': return <LandingPage navigate={navigate} />
       case 'voice': return <VoiceAssistantPage />
-      case 'schemes': return <GovernmentSchemesPage />
-      case 'ideas': return <BusinessIdeasPage />
-      case 'mentor': return <MentorPage />
+      case 'schemes': return <GovernmentSchemesPage navigate={navigate} />
+      case 'ideas': return <BusinessIdeasPage navigate={navigate} />
+      case 'mentor': return <MentorPage navigate={navigate} />
       case 'dashboard': return <DashboardPage navigate={navigate} />
       case 'about': return <AboutPage navigate={navigate} />
     }
@@ -1631,7 +1863,7 @@ export default function App() {
 
   return (
     <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", minHeight: '100vh', background: '#fff' }}>
-      <Nav current={page} navigate={navigate} onInstall={handleInstallClick} canInstall={Boolean(deferredPrompt || !isInstalled)} />
+      <Nav current={page} navigate={navigate} />
       <main>{renderPage()}</main>
     </div>
   )
