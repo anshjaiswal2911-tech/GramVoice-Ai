@@ -351,7 +351,8 @@ function LandingPage({ navigate }: { navigate: (p: Page) => void }) {
 function VoiceAssistantPage() {
 type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
 
-const [state, setState] = useState<VoiceState>('idle')
+  const [state, setState] = useState<VoiceState>('idle')
+  const [voiceLang, setVoiceLang] = useState<'hi-IN' | 'en-IN'>('hi-IN')
   const [messages, setMessages] = useState<{ role: string; text: string }[]>([
     { role: 'ai', text: 'Namaste! Main GramVoice AI hoon. Business registration, government schemes, loans, marketing — kuch bhi pucho, Hindi ya English mein. Mic tap karo ya type karo! 🎤' },
   ])
@@ -493,7 +494,7 @@ const [state, setState] = useState<VoiceState>('idle')
     scrollToBottom()
   }
 }
-  const handleMicClick = () => {
+  const handleMicClick = async () => {
     if (state !== 'idle') {
       try {
         window.speechSynthesis?.cancel()
@@ -505,20 +506,30 @@ const [state, setState] = useState<VoiceState>('idle')
 
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
     if (!SpeechRecognition) {
-      setKeyError('Voice input not supported in this browser. Please type your question.')
+      setKeyError('Voice input is not supported in this browser. Please type your question.')
       return
     }
 
-    // Unlock iOS Safari audio on user touch
+    // Unlock iOS Safari audio & microphone hardware on user tap
     if ('speechSynthesis' in window) {
       try {
         window.speechSynthesis.resume()
       } catch {}
     }
 
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+        // Warm up and release mic stream for WebKit SpeechRecognition
+        stream.getTracks().forEach(t => t.stop())
+      } catch (err) {
+        console.warn('getUserMedia audio warmup error:', err)
+      }
+    }
+
     const recognition = new SpeechRecognition()
     recognitionRef.current = recognition
-    recognition.lang = 'hi-IN'
+    recognition.lang = voiceLang
     recognition.interimResults = true
     recognition.continuous = false
     recognition.maxAlternatives = 1
@@ -550,9 +561,11 @@ const [state, setState] = useState<VoiceState>('idle')
       console.warn('Recognition error:', e)
       setState('idle')
       if (e.error === 'not-allowed') {
-        setKeyError('Microphone permission blocked. Settings me jakar Microphone allow karein.')
-      } else if (e.error !== 'no-speech') {
-        setKeyError('Voice detect nahi hua. Kripya type karein.')
+        setKeyError('Microphone permission blocked. Safari Settings me jakar Microphone allow karein.')
+      } else if (e.error === 'no-speech') {
+        setKeyError('Voice detect nahi hui. Kripya bhasha check karein (Hindi / English) ya dobara bolein.')
+      } else {
+        setKeyError('Voice detect karne me dikkat aayi. Kripya dobara mic tap karein ya type karein.')
       }
     }
 
@@ -682,6 +695,33 @@ const [state, setState] = useState<VoiceState>('idle')
           <div className="flex flex-col gap-5">
             <div className="p-6 rounded-2xl flex flex-col items-center gap-6"
               style={{ background: '#fff', border: '1px solid #e2e8f0', boxShadow: '0 4px 20px rgba(0,0,0,0.06)' }}>
+              
+              {/* Language Selection Pills */}
+              <div className="flex items-center gap-1.5 p-1 rounded-xl bg-gray-100 border border-gray-200">
+                <button
+                  type="button"
+                  onClick={() => setVoiceLang('hi-IN')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                    voiceLang === 'hi-IN'
+                      ? 'bg-white text-blue-600 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-800'
+                  }`}
+                >
+                  🇮🇳 हिन्दी
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setVoiceLang('en-IN')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                    voiceLang === 'en-IN'
+                      ? 'bg-white text-blue-600 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-800'
+                  }`}
+                >
+                  🇬🇧 English / Hinglish
+                </button>
+              </div>
+
               <div className="text-sm font-medium" style={{ color: stateColor }}>{stateLabel}</div>
 
               <div className="relative flex items-center justify-center">
