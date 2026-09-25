@@ -363,6 +363,8 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
   const [keyError, setKeyError] = useState('')
   const chatRef = useRef<HTMLDivElement>(null)
   const recognitionRef = useRef<any>(null)
+  const silenceTimerRef = useRef<any>(null)
+  const latestTranscriptRef = useRef<string>('')
 
   const scrollToBottom = () => {
     setTimeout(() => {
@@ -494,13 +496,41 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
     scrollToBottom()
   }
 }
-  const handleMicClick = async () => {
-    if (state !== 'idle') {
-      try {
-        window.speechSynthesis?.cancel()
-        recognitionRef.current?.stop()
-      } catch {}
+  const submitVoiceQuery = (textToSubmit?: string) => {
+    if (silenceTimerRef.current) {
+      clearTimeout(silenceTimerRef.current)
+      silenceTimerRef.current = null
+    }
+    try {
+      recognitionRef.current?.stop()
+    } catch {}
+
+    const q = (textToSubmit || latestTranscriptRef.current || inputText).trim()
+    if (q) {
+      latestTranscriptRef.current = ''
+      setInputText('')
+      setMessages(prev => [...prev, { role: 'user', text: q }])
+      scrollToBottom()
+      callGemini(q)
+    } else {
       setState('idle')
+    }
+  }
+
+  const handleMicClick = async () => {
+    if (state === 'speaking') {
+      try { window.speechSynthesis?.cancel() } catch {}
+      setState('idle')
+      return
+    }
+
+    // If already listening, tapping the mic finishes speaking and sends immediately!
+    if (state === 'listening') {
+      submitVoiceQuery()
+      return
+    }
+
+    if (state === 'processing') {
       return
     }
 
@@ -520,7 +550,6 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-        // Warm up and release mic stream for WebKit SpeechRecognition
         stream.getTracks().forEach(t => t.stop())
       } catch (err) {
         console.warn('getUserMedia audio warmup error:', err)
@@ -531,10 +560,11 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
     recognitionRef.current = recognition
     recognition.lang = voiceLang
     recognition.interimResults = true
-    recognition.continuous = false
+    recognition.continuous = true
     recognition.maxAlternatives = 1
 
-    let capturedText = ''
+    latestTranscriptRef.current = ''
+    let capturedFinal = ''
 
     recognition.onstart = () => {
       setState('listening')
@@ -546,19 +576,33 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const text = event.results[i][0].transcript
         if (event.results[i].isFinal) {
-          capturedText += text
+          capturedFinal += (capturedFinal ? ' ' : '') + text
         } else {
           interim += text
         }
       }
-      const recognized = capturedText || interim
-      if (recognized) {
-        setInputText(recognized)
+      const full = (capturedFinal + ' ' + interim).trim()
+      if (full) {
+        latestTranscriptRef.current = full
+        setInputText(full)
       }
+
+      // Auto-submit after 1.2s of silence when user finishes speaking
+      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current)
+      silenceTimerRef.current = setTimeout(() => {
+        submitVoiceQuery(latestTranscriptRef.current)
+      }, 1200)
     }
 
     recognition.onerror = (e: any) => {
       console.warn('Recognition error:', e)
+      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current)
+
+      if (latestTranscriptRef.current.trim()) {
+        submitVoiceQuery(latestTranscriptRef.current)
+        return
+      }
+
       setState('idle')
       if (e.error === 'not-allowed') {
         setKeyError('Microphone permission blocked. Safari Settings me jakar Microphone allow karein.')
@@ -570,12 +614,12 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
     }
 
     recognition.onend = () => {
-      const q = capturedText.trim() || inputText.trim()
-      if (q) {
-        setMessages(prev => [...prev, { role: 'user', text: q }])
-        setInputText('')
-        scrollToBottom()
-        callGemini(q)
+      if (silenceTimerRef.current) {
+        clearTimeout(silenceTimerRef.current)
+        silenceTimerRef.current = null
+      }
+      if (state === 'listening' || latestTranscriptRef.current.trim()) {
+        submitVoiceQuery(latestTranscriptRef.current)
       } else {
         setState('idle')
       }
@@ -590,9 +634,14 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
   }
 
   const handleTextSend = async () => {
-    const q = inputText.trim()
-    if (!q || state !== 'idle') return
+    const q = (inputText || latestTranscriptRef.current).trim()
+    if (!q || state === 'processing') return
+
+    if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current)
+    try { recognitionRef.current?.stop() } catch {}
+
     setInputText('')
+    latestTranscriptRef.current = ''
     setMessages(prev => [...prev, { role: 'user', text: q }])
     scrollToBottom()
     await callGemini(q)
@@ -681,14 +730,17 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
                   placeholder="Apna sawaal type karo ya mic tap karo..."
                   className="flex-1 px-4 py-2.5 rounded-xl text-sm outline-none"
                   style={{ background: '#f7f9fc', border: '1px solid #e2e8f0', color: '#0d1117' }}
-                  disabled={state !== 'idle'}
+                  disabled={state === 'processing'}
                 />
-                <button onClick={handleTextSend} disabled={state !== 'idle' || !inputText.trim()}
-                  className="p-2.5 rounded-xl gradient-btn disabled:opacity-40">
+                <button
+                  onClick={handleTextSend}
+                  disabled={state === 'processing' || !inputText.trim()}
+                  className="p-2.5 rounded-xl gradient-btn disabled:opacity-40 transition-all hover:scale-105 active:scale-95"
+                >
                   <ArrowRight size={18} className="text-white" />
                 </button>
               </div>
-              {keyError && <div className="text-xs mt-2" style={{ color: '#ef4444' }}>{keyError}</div>}
+              {keyError && <div className="text-xs mt-2 font-medium" style={{ color: '#ef4444' }}>{keyError}</div>}
             </div>
           </div>
 
@@ -752,17 +804,29 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
                 </div>
               )}
 
-              <div className="text-xs text-center" style={{ color: '#7a8799' }}>
-                {state === 'idle' ? 'Hindi, English, 18 languages' :
-                  state === 'listening' ? 'Bol rahe ho... bolo!' :
-                  state === 'processing' ? 'Gemini AI soch raha hai...' : 'AI bol raha hai...'}
+              <div className="text-xs text-center max-w-[220px]" style={{ color: '#7a8799' }}>
+                {state === 'idle' ? 'Hindi ya English mein boleke mic tap karein' :
+                  state === 'listening' ? '🟢 Bolte rahiye... Bolna rukte hi auto-submit ho jayega ya Send tap karein' :
+                  state === 'processing' ? '⚡ GramVoice AI soch raha hai...' : '🔊 AI bol raha hai...'}
               </div>
 
-              {state !== 'idle' && (
-                <button onClick={() => { window.speechSynthesis?.cancel(); recognitionRef.current?.stop(); setState('idle') }}
-                  className="text-xs px-3 py-1.5 rounded-lg border"
-                  style={{ color: '#ef4444', borderColor: '#fecaca' }}>
-                  Rokna hai? Tap karo
+              {state === 'listening' && (
+                <button
+                  type="button"
+                  onClick={() => submitVoiceQuery()}
+                  className="text-xs px-4 py-2 rounded-xl bg-blue-600 text-white font-semibold shadow-md hover:bg-blue-700 transition-all flex items-center gap-1.5"
+                >
+                  ✓ Bolna ho gaya? Abhi Send Karein
+                </button>
+              )}
+
+              {state === 'speaking' && (
+                <button
+                  type="button"
+                  onClick={() => { window.speechSynthesis?.cancel(); setState('idle') }}
+                  className="text-xs px-3.5 py-1.5 rounded-lg border text-red-600 border-red-200 hover:bg-red-50 transition-all"
+                >
+                  Awaaz rokein (Stop Audio)
                 </button>
               )}
             </div>
