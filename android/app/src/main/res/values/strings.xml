@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">GramVoice AI</string>
+    <string name="title_activity_main">GramVoice AI</string>
+    <string name="package_name">com.gramvoice.ai</string>
+    <string name="custom_url_scheme">com.gramvoice.ai</string>
+</resources>

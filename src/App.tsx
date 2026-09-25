@@ -50,7 +50,7 @@ const ArrowRight = ({ size = 16, className = '', style = {} }: IconProps) => (
 )
 
 // ── Nav ─────────────────────────────────────────────────────────────────────
-function Nav({ current, navigate }: { current: Page; navigate: (p: Page) => void }) {
+function Nav({ current, navigate, onInstall, canInstall }: { current: Page; navigate: (p: Page) => void; onInstall?: () => void; canInstall?: boolean }) {
   const [open, setOpen] = useState(false)
 
   const links: { label: string; page: Page }[] = [
@@ -91,8 +91,17 @@ function Nav({ current, navigate }: { current: Page; navigate: (p: Page) => void
         </nav>
 
         <div className="flex items-center gap-3">
-          <button className="hidden md:block px-4 py-2 rounded-xl text-sm font-semibold text-white gradient-btn">
-            Get Started
+          {canInstall && (
+            <button
+              onClick={onInstall}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-emerald-700 bg-emerald-100 hover:bg-emerald-200 transition-all cursor-pointer"
+            >
+              <span>📱</span>
+              <span>Install App</span>
+            </button>
+          )}
+          <button onClick={() => navigate('voice')} className="hidden sm:block px-4 py-2 rounded-xl text-sm font-semibold text-white gradient-btn">
+            Voice Assistant
           </button>
           <button onClick={() => setOpen(!open)} className="md:hidden p-2 rounded-lg" style={{ color: '#3d4755' }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M3 12H21M3 6H21M3 18H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
@@ -102,6 +111,15 @@ function Nav({ current, navigate }: { current: Page; navigate: (p: Page) => void
 
       {open && (
         <div className="md:hidden px-4 pb-4 flex flex-col gap-1" style={{ borderTop: '1px solid #e2e8f0' }}>
+          {canInstall && (
+            <button
+              onClick={() => { onInstall?.(); setOpen(false) }}
+              className="w-full text-left px-3 py-2.5 rounded-lg text-sm font-semibold text-emerald-700 bg-emerald-50 mb-1 flex items-center gap-2"
+            >
+              <span>📱</span>
+              <span>Install GramVoice App on Mobile</span>
+            </button>
+          )}
           {links.map(l => (
             <button
               key={l.page}
@@ -1352,6 +1370,37 @@ function Footer({ navigate }: { navigate: (p: Page) => void }) {
 // ── App ───────────────────────────────────────────────────────────────────────
 export default function App() {
   const [page, setPage] = useState<Page>('landing')
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
+  const [isInstalled, setIsInstalled] = useState(false)
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: any) => {
+      e.preventDefault()
+      setDeferredPrompt(e)
+    }
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+    window.addEventListener('appinstalled', () => {
+      setIsInstalled(true)
+      setDeferredPrompt(null)
+    })
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+    }
+  }, [])
+
+  const handleInstallClick = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt()
+      const { outcome } = await deferredPrompt.userChoice
+      if (outcome === 'accepted') {
+        setDeferredPrompt(null)
+      }
+    } else {
+      alert('Mobile browser menu (⋮ ya Share button) me jakar "Add to Home Screen" / "Install App" par tap karein.')
+    }
+  }
 
   const navigate = (p: Page) => {
     setPage(p)
@@ -1372,7 +1421,7 @@ export default function App() {
 
   return (
     <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", minHeight: '100vh', background: '#fff' }}>
-      <Nav current={page} navigate={navigate} />
+      <Nav current={page} navigate={navigate} onInstall={handleInstallClick} canInstall={Boolean(deferredPrompt || !isInstalled)} />
       <main>{renderPage()}</main>
     </div>
   )

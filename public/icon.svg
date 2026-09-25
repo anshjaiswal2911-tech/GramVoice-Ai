@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1a6fff"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000000" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="128" fill="url(#grad)" filter="url(#shadow)"/>
+  
+  <!-- Microphone Icon -->
+  <g transform="translate(156, 120) scale(8.33)" fill="none" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Mic body -->
+    <rect x="9" y="2" width="6" height="12" rx="3" fill="#ffffff" stroke="none" />
+    <!-- Outer arc -->
+    <path d="M5 10a7 7 0 0 0 14 0" stroke-width="2.2" />
+    <!-- Stand -->
+    <line x1="12" y1="17" x2="12" y2="22" stroke-width="2.2" />
+    <!-- Base -->
+    <line x1="8" y1="22" x2="16" y2="22" stroke-width="2.2" />
+  </g>
+</svg>
