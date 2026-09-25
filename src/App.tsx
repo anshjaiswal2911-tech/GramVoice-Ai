@@ -49,6 +49,14 @@ const ArrowRight = ({ size = 16, className = '', style = {} }: IconProps) => (
   </svg>
 )
 
+const VolumeIcon = ({ size = 16, className = '', style = {} }: IconProps) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className} style={style}>
+    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="currentColor" />
+    <path d="M15.54 8.46a5 5 0 0 1 0 7.07" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    <path d="M19.07 4.93a10 10 0 0 1 0 14.14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+  </svg>
+)
+
 // ── Nav ─────────────────────────────────────────────────────────────────────
 function Nav({ current, navigate, onInstall, canInstall }: { current: Page; navigate: (p: Page) => void; onInstall?: () => void; canInstall?: boolean }) {
   const [open, setOpen] = useState(false)
@@ -386,116 +394,123 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
     // Automatically wake up Render backend as soon as user opens the page
     const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/$/, '')
     fetch(`${API_BASE_URL}/api/health`).catch(() => {})
-  }, [])
-
-  const callGemini = async (question: string) => {
-  if (!question.trim()) return
-
-  setState('processing')
-  setKeyError('')
-
-  const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/$/, '')
-  try {
-    const res = await fetch(`${API_BASE_URL}/api/chat`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        message: question,
-      }),
-    })
-
-    const data = await res.json()
-
-    if (!res.ok || !data.success) {
-      throw new Error(data.error || 'AI request failed')
-    }
-
-    const answer =
-      data.reply ||
-      data.response ||
-      'Sorry, response nahi mili. Please try again.'
-
-    setMessages(prev => [
-      ...prev,
-      {
-        role: 'ai',
-        text: answer,
-      },
-    ])
-
-    scrollToBottom()
 
     if ('speechSynthesis' in window) {
-      try {
-        window.speechSynthesis.cancel()
-        window.speechSynthesis.resume()
+      window.speechSynthesis.getVoices()
+      window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.getVoices()
+      }
+    }
+  }, [])
 
-        const utter = new SpeechSynthesisUtterance(
-          answer.replace(/[*#_`]/g, '')
-        )
+  const speakText = (rawText: string) => {
+    if (!('speechSynthesis' in window)) return
 
-        utter.lang = /[\u0900-\u097F]/.test(answer) ? 'hi-IN' : 'en-IN'
-        utter.rate = 0.95
-        utter.pitch = 1
+    try {
+      window.speechSynthesis.cancel()
+      window.speechSynthesis.resume()
 
-        let speechTimeout: any
+      // Clean markdown symbols, asterisks, bullet points, links, and emoji
+      const cleanText = rawText
+        .replace(/[*#_`~]/g, '')
+        .replace(/\bhttps?:\/\/\S+/gi, '')
+        .replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')
+        .trim()
 
-        // Set fallback to idle if iOS silently ignores speech
-        const startCheckTimeout = setTimeout(() => {
-          setState((curr) => (curr === 'processing' ? 'idle' : curr))
-        }, 1500)
+      if (!cleanText) return
 
-        utter.onstart = () => {
-          clearTimeout(startCheckTimeout)
-          setState('speaking')
-          speechTimeout = setTimeout(() => {
-            setState('idle')
-          }, 30000)
-        }
+      const utter = new SpeechSynthesisUtterance(cleanText)
+      const voices = window.speechSynthesis.getVoices() || []
+      const hasDevanagari = /[\u0900-\u097F]/.test(cleanText)
 
-        utter.onend = () => {
-          clearTimeout(startCheckTimeout)
-          clearTimeout(speechTimeout)
-          setState('idle')
-        }
+      if (hasDevanagari) {
+        utter.lang = 'hi-IN'
+        const hiVoice = voices.find(v => v.lang.startsWith('hi') || v.name.toLowerCase().includes('hindi') || v.name.toLowerCase().includes('lekha') || v.name.toLowerCase().includes('neerja'))
+        if (hiVoice) utter.voice = hiVoice
+      } else {
+        utter.lang = 'en-IN'
+        const enVoice = voices.find(v => v.lang.startsWith('en-IN') || v.name.toLowerCase().includes('india') || v.name.toLowerCase().includes('rishi') || v.name.toLowerCase().includes('sangeeta')) || voices.find(v => v.lang.startsWith('en'))
+        if (enVoice) utter.voice = enVoice
+      }
 
-        utter.onerror = (e) => {
-          console.warn('Speech error:', e)
-          clearTimeout(startCheckTimeout)
-          clearTimeout(speechTimeout)
-          setState('idle')
-        }
+      utter.rate = 0.95
+      utter.pitch = 1.0
+      utter.volume = 1.0
 
-        window.speechSynthesis.speak(utter)
-      } catch (err) {
-        console.warn('SpeechSynthesis speak failed:', err)
+      utter.onstart = () => setState('speaking')
+      utter.onend = () => setState('idle')
+      utter.onerror = (e) => {
+        console.warn('SpeechSynthesis error:', e)
         setState('idle')
       }
-    } else {
+
+      window.speechSynthesis.speak(utter)
+    } catch (err) {
+      console.warn('SpeechSynthesis speak failed:', err)
       setState('idle')
     }
-
-  } catch (error: any) {
-    console.error('GramVoice AI Error:', error)
-
-    setMessages(prev => [
-      ...prev,
-      {
-        role: 'ai',
-        text: 'Server connect ho raha hai (Render cold start). Kripya 15-20 second intezaar karke apna sawaal dubara bhejein!',
-      },
-    ])
-
-    setKeyError(
-      'Server wake up ho raha hai. Kripya thoda intezaar karke dubara try karein.'
-    )
-
-    setState('idle')
-    scrollToBottom()
   }
-}
+
+  const callGemini = async (question: string) => {
+    if (!question.trim()) return
+
+    setState('processing')
+    setKeyError('')
+
+    const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/$/, '')
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: question,
+        }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'AI request failed')
+      }
+
+      const answer =
+        data.reply ||
+        data.response ||
+        'Sorry, response nahi mili. Please try again.'
+
+      setMessages(prev => [
+        ...prev,
+        {
+          role: 'ai',
+          text: answer,
+        },
+      ])
+
+      scrollToBottom()
+      speakText(answer)
+
+    } catch (error: any) {
+      console.error('GramVoice AI Error:', error)
+
+      setMessages(prev => [
+        ...prev,
+        {
+          role: 'ai',
+          text: 'Server connect ho raha hai (Render cold start). Kripya 15-20 second intezaar karke apna sawaal dubara bhejein!',
+        },
+      ])
+
+      setKeyError(
+        'Server wake up ho raha hai. Kripya thoda intezaar karke dubara try karein.'
+      )
+
+      setState('idle')
+      scrollToBottom()
+    }
+  }
+
   const submitVoiceQuery = (textToSubmit?: string) => {
     if (silenceTimerRef.current) {
       clearTimeout(silenceTimerRef.current)
@@ -540,27 +555,18 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
       return
     }
 
-    // Unlock iOS Safari audio & microphone hardware on user tap
+    // Unlock iOS Safari audio on user tap
     if ('speechSynthesis' in window) {
       try {
         window.speechSynthesis.resume()
       } catch {}
     }
 
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-        stream.getTracks().forEach(t => t.stop())
-      } catch (err) {
-        console.warn('getUserMedia audio warmup error:', err)
-      }
-    }
-
     const recognition = new SpeechRecognition()
     recognitionRef.current = recognition
     recognition.lang = voiceLang
     recognition.interimResults = true
-    recognition.continuous = true
+    recognition.continuous = false
     recognition.maxAlternatives = 1
 
     latestTranscriptRef.current = ''
@@ -607,7 +613,7 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
       if (e.error === 'not-allowed') {
         setKeyError('Microphone permission blocked. Safari Settings me jakar Microphone allow karein.')
       } else if (e.error === 'no-speech') {
-        setKeyError('Voice detect nahi hui. Kripya bhasha check karein (Hindi / English) ya dobara bolein.')
+        setKeyError('Voice detect nahi hui. Kripya dobara mic tap karein ya English/Hindi select karein.')
       } else {
         setKeyError('Voice detect karne me dikkat aayi. Kripya dobara mic tap karein ya type karein.')
       }
@@ -668,7 +674,7 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
           <p className="text-sm" style={{ color: '#7a8799' }}>Hindi, English, Tamil, Marathi, Telugu — koi bhi bhasha mein bolo</p>
         </div>
 
-        <div className="mb-5 flex items-center justify-between px-4 py-2.5 rounded-xl"
+        <div className="mb-3 flex items-center justify-between px-4 py-2.5 rounded-xl"
           style={{ background: '#d1fae5', border: '1px solid #a7f3d0' }}>
           <div className="flex items-center gap-2 text-xs font-medium" style={{ color: '#065f46' }}>
             <div className="w-2 h-2 rounded-full bg-green-500" />
@@ -677,6 +683,11 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
           <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full">
             Online
           </span>
+        </div>
+
+        <div className="mb-5 px-3.5 py-2 rounded-xl bg-amber-50 border border-amber-200/80 text-amber-900 text-xs flex items-center gap-2">
+          <span className="font-semibold text-amber-800">💡 iPhone Voice Tip:</span>
+          <span className="text-amber-700">Agar phone me awaaz na aaye, toh iPhone ka <strong>Silent / Mute switch off</strong> karein aur message par <strong>"Awaaz me sunein"</strong> tap karein!</span>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-6">
@@ -697,7 +708,7 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
 
             <div ref={chatRef} className="flex-1 overflow-y-auto p-5 flex flex-col gap-4">
               {messages.map((m, i) => (
-                <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div key={i} className={`flex flex-col ${m.role === 'user' ? 'items-end' : 'items-start'}`}>
                   <div className="max-w-[85%] px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap"
                     style={{
                       background: m.role === 'user' ? 'linear-gradient(135deg, #1a6fff, #0ea5e9)' : '#f7f9fc',
@@ -707,6 +718,16 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
                     }}>
                     {m.text}
                   </div>
+                  {m.role === 'ai' && (
+                    <button
+                      type="button"
+                      onClick={() => speakText(m.text)}
+                      className="mt-1.5 ml-1 text-[11px] font-medium text-blue-700 bg-blue-50/90 hover:bg-blue-100 border border-blue-200/80 px-2.5 py-1 rounded-lg flex items-center gap-1.5 transition-all shadow-xs"
+                    >
+                      <VolumeIcon size={12} className="text-blue-600" />
+                      <span>Awaaz me sunein (Listen)</span>
+                    </button>
+                  )}
                 </div>
               ))}
               {state === 'processing' && (
