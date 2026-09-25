@@ -669,20 +669,15 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
           <p className="text-sm" style={{ color: '#7a8799' }}>Hindi, English, Tamil, Marathi, Telugu — koi bhi bhasha mein bolo</p>
         </div>
 
-        <div className="mb-3 flex items-center justify-between px-4 py-2.5 rounded-xl"
+        <div className="mb-5 flex items-center justify-between px-4 py-2.5 rounded-xl"
           style={{ background: '#d1fae5', border: '1px solid #a7f3d0' }}>
           <div className="flex items-center gap-2 text-xs font-medium" style={{ color: '#065f46' }}>
             <div className="w-2 h-2 rounded-full bg-green-500" />
-            GramVoice AI Live — Real AI answers enabled ✓
+            GramVoice AI Live — Interactive Voice Assistant
           </div>
           <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full">
             Online
           </span>
-        </div>
-
-        <div className="mb-5 px-3.5 py-2 rounded-xl bg-amber-50 border border-amber-200/80 text-amber-900 text-xs flex items-center gap-2">
-          <span className="font-semibold text-amber-800">💡 iPhone Voice Tip:</span>
-          <span className="text-amber-700">Agar phone me awaaz na aaye, toh iPhone ka <strong>Silent / Mute switch off</strong> karein aur message par <strong>"Awaaz me sunein"</strong> tap karein!</span>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-6">
