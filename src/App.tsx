@@ -425,28 +425,51 @@ const [state, setState] = useState<VoiceState>('idle')
     scrollToBottom()
 
     if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel()
+      try {
+        window.speechSynthesis.cancel()
+        window.speechSynthesis.resume()
 
-      const utter = new SpeechSynthesisUtterance(
-        answer.replace(/[*#_]/g, '')
-      )
+        const utter = new SpeechSynthesisUtterance(
+          answer.replace(/[*#_`]/g, '')
+        )
 
-      utter.lang = /[\u0900-\u097F]/.test(answer)
-        ? 'hi-IN'
-        : 'en-IN'
+        utter.lang = /[\u0900-\u097F]/.test(answer) ? 'hi-IN' : 'en-IN'
+        utter.rate = 0.95
+        utter.pitch = 1
 
-      utter.rate = 0.92
-      utter.pitch = 1
+        let speechTimeout: any
 
-      utter.onstart = () => {
-        setState('speaking')
-      }
+        // Set fallback to idle if iOS silently ignores speech
+        const startCheckTimeout = setTimeout(() => {
+          setState((curr) => (curr === 'processing' ? 'idle' : curr))
+        }, 1500)
 
-      utter.onend = () => {
+        utter.onstart = () => {
+          clearTimeout(startCheckTimeout)
+          setState('speaking')
+          speechTimeout = setTimeout(() => {
+            setState('idle')
+          }, 30000)
+        }
+
+        utter.onend = () => {
+          clearTimeout(startCheckTimeout)
+          clearTimeout(speechTimeout)
+          setState('idle')
+        }
+
+        utter.onerror = (e) => {
+          console.warn('Speech error:', e)
+          clearTimeout(startCheckTimeout)
+          clearTimeout(speechTimeout)
+          setState('idle')
+        }
+
+        window.speechSynthesis.speak(utter)
+      } catch (err) {
+        console.warn('SpeechSynthesis speak failed:', err)
         setState('idle')
       }
-
-      window.speechSynthesis.speak(utter)
     } else {
       setState('idle')
     }
@@ -472,36 +495,85 @@ const [state, setState] = useState<VoiceState>('idle')
 }
   const handleMicClick = () => {
     if (state !== 'idle') {
-      window.speechSynthesis?.cancel()
-      recognitionRef.current?.stop()
+      try {
+        window.speechSynthesis?.cancel()
+        recognitionRef.current?.stop()
+      } catch {}
       setState('idle')
       return
     }
+
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
     if (!SpeechRecognition) {
       setKeyError('Voice input not supported in this browser. Please type your question.')
       return
     }
+
+    // Unlock iOS Safari audio on user touch
+    if ('speechSynthesis' in window) {
+      try {
+        window.speechSynthesis.resume()
+      } catch {}
+    }
+
     const recognition = new SpeechRecognition()
     recognitionRef.current = recognition
     recognition.lang = 'hi-IN'
-    recognition.interimResults = false
+    recognition.interimResults = true
     recognition.continuous = false
-    recognition.onstart = () => setState('listening')
+    recognition.maxAlternatives = 1
+
+    let capturedText = ''
+
+    recognition.onstart = () => {
+      setState('listening')
+      setKeyError('')
+    }
+
     recognition.onresult = (event: any) => {
-      const transcript = event.results[0][0].transcript
-      setMessages(prev => [...prev, { role: 'user', text: transcript }])
-      scrollToBottom()
-      callGemini(transcript)
+      let interim = ''
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const text = event.results[i][0].transcript
+        if (event.results[i].isFinal) {
+          capturedText += text
+        } else {
+          interim += text
+        }
+      }
+      const recognized = capturedText || interim
+      if (recognized) {
+        setInputText(recognized)
+      }
     }
-    recognition.onerror = () => {
+
+    recognition.onerror = (e: any) => {
+      console.warn('Recognition error:', e)
       setState('idle')
-      setKeyError('Voice detect nahi hua. Please try again or type below.')
+      if (e.error === 'not-allowed') {
+        setKeyError('Microphone permission blocked. Settings me jakar Microphone allow karein.')
+      } else if (e.error !== 'no-speech') {
+        setKeyError('Voice detect nahi hua. Kripya type karein.')
+      }
     }
+
     recognition.onend = () => {
-      setState(prev => (prev === 'listening' ? 'idle' : prev))
+      const q = capturedText.trim() || inputText.trim()
+      if (q) {
+        setMessages(prev => [...prev, { role: 'user', text: q }])
+        setInputText('')
+        scrollToBottom()
+        callGemini(q)
+      } else {
+        setState('idle')
+      }
     }
-    recognition.start()
+
+    try {
+      recognition.start()
+    } catch (err) {
+      console.error('Failed to start recognition:', err)
+      setState('idle')
+    }
   }
 
   const handleTextSend = async () => {
