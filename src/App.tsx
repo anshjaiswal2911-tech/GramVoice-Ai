@@ -392,52 +392,102 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
       window.speechSynthesis.cancel()
       window.speechSynthesis.resume()
 
-      // Clean markdown symbols, asterisks, bullet points, links, and emoji
-      const cleanText = rawText
-        .replace(/[*#_`~]/g, '')
+      // Comprehensive voice normalization for clear Indian pronunciation
+      let cleanText = rawText
+        // Replace rupee symbol and amounts
+        .replace(/₹\s*([0-9,]+)/g, '$1 रुपये ')
+        .replace(/\bRs\.?\s*([0-9,]+)/gi, '$1 रुपये ')
+        // Replace percentages and symbols
+        .replace(/%/g, ' प्रतिशत ')
+        .replace(/&/g, ' और ')
+        .replace(/\//g, ' या ')
+        // Spell out common business abbreviations for clear voice readout
+        .replace(/\bMSME\b/g, 'एम एस एम ई')
+        .replace(/\bGST\b/g, 'जी एस टी')
+        .replace(/\bPM\b/g, 'पी एम')
+        .replace(/\bFSSAI\b/g, 'एफ एस एस ए आई')
+        .replace(/\bPMEGP\b/g, 'पी एम ई जी पी')
+        // Clean markdown, brackets, bullets, asterisks, hashes
+        .replace(/[*#_`~|]/g, ' ')
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
         .replace(/\bhttps?:\/\/\S+/gi, '')
+        .replace(/[•–—]/g, ' ')
         .replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')
+        .replace(/\s+/g, ' ')
         .trim()
 
       if (!cleanText) return
 
-      // Delay by 150ms to allow mobile audio session to transition from mic recording to speaker output
+      // Delay by 100ms for mobile audio hardware transition
       setTimeout(() => {
         try {
           window.speechSynthesis.resume()
-          const utter = new SpeechSynthesisUtterance(cleanText)
           const voices = window.speechSynthesis.getVoices() || []
           const hasDevanagari = /[\u0900-\u097F]/.test(cleanText)
 
-          if (hasDevanagari) {
-            utter.lang = 'hi-IN'
-            const hiVoice = voices.find(v => v.lang.startsWith('hi') || v.name.toLowerCase().includes('hindi') || v.name.toLowerCase().includes('lekha') || v.name.toLowerCase().includes('neerja'))
-            if (hiVoice) utter.voice = hiVoice
-          } else {
-            utter.lang = 'en-IN'
-            const enVoice = voices.find(v => v.lang.startsWith('en-IN') || v.name.toLowerCase().includes('india') || v.name.toLowerCase().includes('rishi') || v.name.toLowerCase().includes('sangeeta')) || voices.find(v => v.lang.startsWith('en'))
-            if (enVoice) utter.voice = enVoice
+          // Split into sentences for smooth, stutter-free playback on mobile browsers
+          const sentences = cleanText.match(/[^।?!.\n]+[।?!.\n]*/g)?.map(s => s.trim()).filter(Boolean) || [cleanText]
+
+          let currentIndex = 0
+
+          const playNextSentence = () => {
+            if (currentIndex >= sentences.length) {
+              setState('idle')
+              return
+            }
+
+            const sentence = sentences[currentIndex]
+            currentIndex++
+
+            const utter = new SpeechSynthesisUtterance(sentence)
+
+            if (hasDevanagari || lang === 'hi') {
+              utter.lang = 'hi-IN'
+              const hiVoice = voices.find(v =>
+                v.lang.startsWith('hi') ||
+                v.name.toLowerCase().includes('hindi') ||
+                v.name.toLowerCase().includes('lekha') ||
+                v.name.toLowerCase().includes('neerja') ||
+                v.name.toLowerCase().includes('kalpana') ||
+                v.name.toLowerCase().includes('hemant')
+              )
+              if (hiVoice) utter.voice = hiVoice
+            } else {
+              utter.lang = 'en-IN'
+              const enVoice = voices.find(v =>
+                v.lang.startsWith('en-IN') ||
+                v.name.toLowerCase().includes('india') ||
+                v.name.toLowerCase().includes('rishi') ||
+                v.name.toLowerCase().includes('sangeeta') ||
+                v.name.toLowerCase().includes('heera')
+              ) || voices.find(v => v.lang.startsWith('en'))
+              if (enVoice) utter.voice = enVoice
+            }
+
+            utter.rate = 0.93
+            utter.pitch = 1.02
+            utter.volume = 1.0
+
+            utter.onstart = () => setState('speaking')
+            utter.onend = () => {
+              playNextSentence()
+            }
+            utter.onerror = (e) => {
+              console.warn('Utterance error:', e)
+              playNextSentence()
+            }
+
+            window.speechSynthesis.speak(utter)
           }
 
-          utter.rate = 0.95
-          utter.pitch = 1.0
-          utter.volume = 1.0
-
-          utter.onstart = () => setState('speaking')
-          utter.onend = () => setState('idle')
-          utter.onerror = (e) => {
-            console.warn('SpeechSynthesis error:', e)
-            setState('idle')
-          }
-
-          window.speechSynthesis.speak(utter)
+          playNextSentence()
         } catch (err) {
-          console.warn('Delayed speak error:', err)
+          console.warn('SpeechSynthesis playback error:', err)
           setState('idle')
         }
-      }, 150)
+      }, 100)
     } catch (err) {
-      console.warn('SpeechSynthesis speak failed:', err)
+      console.warn('SpeechSynthesis init failed:', err)
       setState('idle')
     }
   }
