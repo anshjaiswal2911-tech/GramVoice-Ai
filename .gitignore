@@ -1,6 +1,7 @@
 # Dependencies
 node_modules/
 server/node_modules/
+backend/node_modules/
 
 # Production build outputs
 dist/
@@ -17,10 +18,13 @@ build/
 .env.production
 server/.env
 server/.env.*
+backend/.env
+backend/.env.*
 
 # Keep environment variable examples
 !.env.example
 !server/.env.example
+!backend/.env.example
 
 # Editor & OS files
 .DS_Store
