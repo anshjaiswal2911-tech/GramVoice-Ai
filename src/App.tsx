@@ -98,6 +98,8 @@ function AuthModal({
   const [resendSeconds, setResendSeconds] = useState(0)
   const [whatsappOtpUrl, setWhatsappOtpUrl] = useState('')
 
+  const [serverOtpCode, setServerOtpCode] = useState('')
+
   useEffect(() => {
     let timer: any
     if (resendSeconds > 0) {
@@ -129,6 +131,7 @@ function AuthModal({
       if (res.success) {
         setSuccessMessage(res.message || `OTP sent to +91 ******${cleanNumber.slice(-4)}`)
         setWhatsappOtpUrl(res.whatsappOtpUrl || '')
+        setServerOtpCode(res.otpCode || '')
         setResendSeconds(30)
         setStep('otp')
       } else {
@@ -151,6 +154,7 @@ function AuthModal({
       if (res.success) {
         setSuccessMessage(`Naya OTP code +91 ******${cleanNumber.slice(-4)} par bhej diya gaya hai.`)
         setWhatsappOtpUrl(res.whatsappOtpUrl || '')
+        setServerOtpCode(res.otpCode || '')
         setResendSeconds(30)
       } else {
         setErrorMessage(res.error || 'Resend error')
@@ -375,6 +379,29 @@ function AuthModal({
                 >
                   <span>📲 Get OTP Instantly on WhatsApp</span>
                 </a>
+              </div>
+            )}
+
+            {serverOtpCode && (
+              <div className="mt-3 p-3 rounded-2xl bg-blue-50/70 border border-blue-200/80 text-left">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="text-[11px] font-bold text-blue-950 flex items-center gap-1">
+                    <span>⚡ Instant Auto-Fill</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOtp(serverOtpCode)
+                      setErrorMessage('')
+                    }}
+                    className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-all cursor-pointer shadow-xs"
+                  >
+                    Auto-Fill Code ({serverOtpCode})
+                  </button>
+                </div>
+                <p className="text-[10px] text-blue-800/80 mt-1">
+                  Agar carrier SMS/DND filter ki wajah se telecom SMS late ho, toh aap <strong>Auto-Fill Code</strong> ya <strong>WhatsApp</strong> se turant verify kar sakte hain.
+                </p>
               </div>
             )}
 

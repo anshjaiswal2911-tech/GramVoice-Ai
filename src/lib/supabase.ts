@@ -289,7 +289,7 @@ export async function requestPhoneOtp(
   name: string,
   businessType: string,
   location: string
-): Promise<{ success: boolean; message?: string; phone?: string; whatsappOtpUrl?: string; error?: string }> {
+): Promise<{ success: boolean; message?: string; phone?: string; otpCode?: string; whatsappOtpUrl?: string; error?: string }> {
   try {
     const res = await fetch(`${API_BASE_URL}/api/auth/send-otp`, {
       method: 'POST',
@@ -328,6 +328,7 @@ export async function requestPhoneOtp(
     success: true,
     message: `OTP aapke mobile number +91 ******${cleanPhone.slice(-4)} par bhej diya gaya hai.`,
     phone: `+91 ${cleanPhone}`,
+    otpCode: localOtp,
     whatsappOtpUrl: `https://wa.me/91${cleanPhone}?text=${encodeURIComponent(`*GramVoice AI Security Alert*\n\nAapka login verification OTP code hai: *${localOtp}*\n\nYe code 5 minute tak valid hai.`)}`
   }
 }

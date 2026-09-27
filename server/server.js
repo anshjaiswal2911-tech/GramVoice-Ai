@@ -425,6 +425,7 @@ app.post("/api/auth/send-otp", async (req, res) => {
       success: true,
       message: `OTP aapke mobile number +91 ******${cleanPhone.slice(-4)} par bhej diya gaya hai.`,
       phone: `+91 ${cleanPhone}`,
+      otpCode: otp,
       whatsappOtpUrl: `https://wa.me/91${cleanPhone}?text=${encodeURIComponent(`*GramVoice AI Security Alert*\n\nAapka login verification OTP hai: *${otp}*\n\nYe code 5 minute tak valid hai. Kripya kisi ke saath share na karein.`)}`
     });
   } catch (err) {
