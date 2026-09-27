@@ -7,10 +7,15 @@ import {
   toggleSaveScheme,
   getSavedSchemes,
   isSupabaseConfigured,
+  getCurrentUser,
+  loginUser,
+  logoutUser,
   type VoiceChatRecord,
   type MentorBookingRecord,
-  type SavedSchemeRecord
+  type SavedSchemeRecord,
+  type UserProfile
 } from './lib/supabase'
+import { generateBusinessPlanPDF, shareOnWhatsApp } from './lib/pdfGenerator'
 
 type Page = 'landing' | 'voice' | 'schemes' | 'ideas' | 'mentor' | 'dashboard' | 'about'
 
@@ -69,8 +74,211 @@ const VolumeIcon = ({ size = 16, className = '', style = {} }: IconProps) => (
   </svg>
 )
 
+// ── Auth Modal ─────────────────────────────────────────────────────────────────
+function AuthModal({
+  isOpen,
+  onClose,
+  onLoginSuccess
+}: {
+  isOpen: boolean
+  onClose: () => void
+  onLoginSuccess: (u: UserProfile) => void
+}) {
+  const [name, setName] = useState('')
+  const [phone, setPhone] = useState('')
+  const [businessType, setBusinessType] = useState('Kirana & General Store')
+  const [location, setLocation] = useState('Jaipur, Rajasthan')
+  const [step, setStep] = useState<'input' | 'otp' | 'success'>('input')
+  const [otp, setOtp] = useState('')
+
+  if (!isOpen) return null
+
+  const handleSendOtp = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!name.trim() || !phone.trim()) {
+      alert('Kripya apna Naam aur Mobile number bharein')
+      return
+    }
+    setStep('otp')
+  }
+
+  const handleVerifyOtp = () => {
+    const user = loginUser(name, phone, businessType, location)
+    setStep('success')
+    setTimeout(() => {
+      onLoginSuccess(user)
+      onClose()
+      setStep('input')
+    }, 1000)
+  }
+
+  const handleQuickDemoLogin = (demoName: string, demoBusiness: string, demoLoc: string) => {
+    const user = loginUser(demoName, '+91 98765 43210', demoBusiness, demoLoc)
+    onLoginSuccess(user)
+    onClose()
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+      <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-gray-100 relative">
+        <button
+          onClick={onClose}
+          className="absolute top-5 right-5 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:text-gray-800 cursor-pointer"
+        >
+          ✕
+        </button>
+
+        {step === 'input' && (
+          <div>
+            <div className="flex items-center gap-2.5 mb-2">
+              <div className="w-8 h-8 rounded-xl gradient-btn flex items-center justify-center">
+                <MicIcon size={16} className="text-white" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-900">GramVoice AI Login</h2>
+            </div>
+            <p className="text-xs text-gray-500 mb-6">Apna account login karein aur personal business dashboard access karein.</p>
+
+            <form onSubmit={handleSendOtp} className="space-y-3.5">
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">Aapka Poora Naam (Full Name):</label>
+                <input
+                  type="text"
+                  required
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  placeholder="e.g. Ramesh Sharma"
+                  className="w-full p-3 rounded-xl border border-gray-200 outline-none text-xs focus:border-blue-500 bg-gray-50/50"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">Mobile Number (WhatsApp Enabled):</label>
+                <input
+                  type="tel"
+                  required
+                  value={phone}
+                  onChange={e => setPhone(e.target.value)}
+                  placeholder="e.g. 9876543210"
+                  className="w-full p-3 rounded-xl border border-gray-200 outline-none text-xs focus:border-blue-500 bg-gray-50/50"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">Business Type:</label>
+                  <select
+                    value={businessType}
+                    onChange={e => setBusinessType(e.target.value)}
+                    className="w-full p-2.5 rounded-xl border border-gray-200 outline-none text-xs bg-gray-50/50 font-medium"
+                  >
+                    <option>Kirana & Retail</option>
+                    <option>Dairy & Livestock</option>
+                    <option>Tailoring & Apparel</option>
+                    <option>Poultry Farm</option>
+                    <option>Agriculture / FPO</option>
+                    <option>Food Processing</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">District / State:</label>
+                  <input
+                    type="text"
+                    value={location}
+                    onChange={e => setLocation(e.target.value)}
+                    placeholder="e.g. Jaipur, Rajasthan"
+                    className="w-full p-2.5 rounded-xl border border-gray-200 outline-none text-xs bg-gray-50/50"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-3.5 rounded-xl text-xs font-semibold text-white gradient-btn cursor-pointer shadow-md hover:scale-102 transition-all mt-2"
+              >
+                Send OTP & Login
+              </button>
+            </form>
+
+            <div className="mt-5 pt-4 border-t border-gray-100">
+              <div className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider text-center mb-2.5">
+                ⚡ Or Instant 1-Click Demo Profile
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleQuickDemoLogin('Ramesh Sharma', 'Kirana & Grocery', 'Jaipur, Rajasthan')}
+                  className="p-2.5 rounded-xl border border-blue-100 bg-blue-50/60 hover:bg-blue-100 text-left transition-all cursor-pointer"
+                >
+                  <div className="font-bold text-xs text-blue-950">👨‍🌾 Ramesh Sharma</div>
+                  <div className="text-[10px] text-blue-700">Kirana Store Owner</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleQuickDemoLogin('Sunita Devi', 'Dairy & Animal Husbandry', 'Varanasi, UP')}
+                  className="p-2.5 rounded-xl border border-emerald-100 bg-emerald-50/60 hover:bg-emerald-100 text-left transition-all cursor-pointer"
+                >
+                  <div className="font-bold text-xs text-emerald-950">👩‍💼 Sunita Devi</div>
+                  <div className="text-[10px] text-emerald-700">Dairy Entrepreneur</div>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {step === 'otp' && (
+          <div className="text-center py-4">
+            <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl mx-auto mb-3">
+              📱
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 mb-1">OTP Verification</h3>
+            <p className="text-xs text-gray-500 mb-4">
+              Enter 4-digit code sent to <strong>{phone}</strong> (Demo OTP: <strong>1234</strong>)
+            </p>
+            <input
+              type="text"
+              maxLength={4}
+              value={otp}
+              onChange={e => setOtp(e.target.value)}
+              placeholder="1 2 3 4"
+              className="w-40 text-center tracking-widest text-lg font-bold p-3 rounded-xl border border-blue-300 outline-none mb-4 mx-auto block bg-blue-50/30"
+            />
+            <button
+              onClick={handleVerifyOtp}
+              className="w-full py-3.5 rounded-xl text-xs font-semibold text-white gradient-btn cursor-pointer shadow-md hover:scale-102 transition-all"
+            >
+              Verify & Enter GramVoice AI
+            </button>
+          </div>
+        )}
+
+        {step === 'success' && (
+          <div className="text-center py-8">
+            <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-3">
+              ✓
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-1">Welcome, {name || 'Entrepreneur'}!</h3>
+            <p className="text-xs text-gray-500">Aapka account verify ho gaya hai. Personalized dashboard khul raha hai...</p>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ── Nav ─────────────────────────────────────────────────────────────────────
-function Nav({ current, navigate }: { current: Page; navigate: (p: Page) => void }) {
+function Nav({
+  current,
+  navigate,
+  user,
+  onOpenAuth,
+  onLogout
+}: {
+  current: Page
+  navigate: (p: Page) => void
+  user: UserProfile | null
+  onOpenAuth: () => void
+  onLogout: () => void
+}) {
   const [open, setOpen] = useState(false)
 
   const links: { label: string; page: Page }[] = [
@@ -110,7 +318,38 @@ function Nav({ current, navigate }: { current: Page; navigate: (p: Page) => void
           ))}
         </nav>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
+          {user ? (
+            <div className="flex items-center gap-1.5">
+              <div
+                onClick={() => navigate('dashboard')}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gray-50 border border-gray-200 text-xs cursor-pointer hover:bg-gray-100 transition-all"
+              >
+                <div
+                  className="w-6 h-6 rounded-full flex items-center justify-center font-bold text-white text-[10px]"
+                  style={{ background: user.avatarColor || '#1a6fff' }}
+                >
+                  {user.name.charAt(0).toUpperCase()}
+                </div>
+                <span className="font-semibold text-gray-800 hidden sm:inline max-w-[100px] truncate">{user.name}</span>
+              </div>
+              <button
+                onClick={onLogout}
+                title="Logout"
+                className="px-2.5 py-1.5 rounded-xl text-gray-400 hover:text-red-600 hover:bg-red-50 text-xs font-semibold cursor-pointer transition-all"
+              >
+                Logout
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={onOpenAuth}
+              className="px-3.5 py-2 rounded-xl text-xs font-semibold border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-all cursor-pointer flex items-center gap-1.5"
+            >
+              👤 <span>Login</span>
+            </button>
+          )}
+
           <button onClick={() => navigate('voice')} className="hidden sm:block px-4 py-2 rounded-xl text-sm font-semibold text-white gradient-btn cursor-pointer transition-all hover:scale-105">
             Voice Assistant
           </button>
@@ -132,6 +371,14 @@ function Nav({ current, navigate }: { current: Page; navigate: (p: Page) => void
               {l.label}
             </button>
           ))}
+          {!user && (
+            <button
+              onClick={() => { onOpenAuth(); setOpen(false) }}
+              className="w-full mt-2 py-2.5 rounded-xl text-xs font-bold text-center bg-blue-600 text-white cursor-pointer"
+            >
+              👤 Login / Register Account
+            </button>
+          )}
         </div>
       )}
     </header>
@@ -350,7 +597,7 @@ function LandingPage({ navigate }: { navigate: (p: Page) => void }) {
 }
 
 // ── Voice Assistant Page ─────────────────────────────────────────────────────
-function VoiceAssistantPage() {
+function VoiceAssistantPage({ user }: { user?: UserProfile | null } = {}) {
 type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
 
   const [state, setState] = useState<VoiceState>('idle')
@@ -800,20 +1047,46 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
                     {m.text}
                   </div>
                   {m.role === 'ai' && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (state === 'speaking') {
-                          stopSpeaking()
-                        } else {
-                          speakText(m.text)
-                        }
-                      }}
-                      className="mt-1.5 ml-1 text-[11px] font-medium text-blue-700 bg-blue-50/90 hover:bg-blue-100 border border-blue-200/80 px-2.5 py-1 rounded-lg flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
-                    >
-                      <VolumeIcon size={12} className={state === 'speaking' ? 'text-red-500' : 'text-blue-600'} />
-                      <span>{state === 'speaking' ? '⏹️ Awaaz Rokein (Stop)' : '🔊 Awaaz me sunein (Listen)'}</span>
-                    </button>
+                    <div className="mt-2 ml-1 flex flex-wrap items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (state === 'speaking') {
+                            stopSpeaking()
+                          } else {
+                            speakText(m.text)
+                          }
+                        }}
+                        className="text-[11px] font-medium text-blue-700 bg-blue-50/90 hover:bg-blue-100 border border-blue-200/80 px-2.5 py-1 rounded-lg flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                      >
+                        <VolumeIcon size={12} className={state === 'speaking' ? 'text-red-500' : 'text-blue-600'} />
+                        <span>{state === 'speaking' ? '⏹️ Rokein' : '🔊 Sunein'}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => generateBusinessPlanPDF({
+                          title: 'GramVoice AI - Consultation Roadmap',
+                          notes: m.text,
+                          steps: [m.text.slice(0, 320)],
+                          userName: user?.name || 'Ramesh Sharma',
+                          businessLocation: user?.location || 'Jaipur, Rajasthan'
+                        })}
+                        className="text-[11px] font-medium text-emerald-700 bg-emerald-50/90 hover:bg-emerald-100 border border-emerald-200/80 px-2.5 py-1 rounded-lg flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                        title="Download official PDF Business Plan / Guide"
+                      >
+                        <span>📄 PDF Report</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => shareOnWhatsApp('GramVoice AI Guidance', m.text.slice(0, 400) + '...')}
+                        className="text-[11px] font-medium text-green-700 bg-green-50/90 hover:bg-green-100 border border-green-200/80 px-2.5 py-1 rounded-lg flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                        title="Share this answer on WhatsApp"
+                      >
+                        <span>📲 WhatsApp</span>
+                      </button>
+                    </div>
                   )}
                 </div>
               ))}
@@ -961,7 +1234,7 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
 }
 
 // ── Government Schemes Page ──────────────────────────────────────────────────
-function GovernmentSchemesPage({ navigate }: { navigate: (p: Page) => void }) {
+function GovernmentSchemesPage({ navigate, user }: { navigate: (p: Page) => void, user?: UserProfile | null }) {
   const [search, setSearch] = useState('')
   const [activeCategory, setActiveCategory] = useState('All')
   const [selectedScheme, setSelectedScheme] = useState<any | null>(null)
@@ -1160,20 +1433,53 @@ function GovernmentSchemesPage({ navigate }: { navigate: (p: Page) => void }) {
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-2.5">
-              <button
-                onClick={() => { setSelectedScheme(null); navigate('voice') }}
-                className="flex-1 py-3 rounded-xl text-xs font-semibold text-white gradient-btn cursor-pointer flex items-center justify-center gap-2"
-              >
-                <MicIcon size={15} />
-                Ask GramVoice AI to Guide Application
-              </button>
-              <button
-                onClick={() => setSelectedScheme(null)}
-                className="px-5 py-3 rounded-xl text-xs font-medium border border-gray-200 hover:bg-gray-50 cursor-pointer"
-              >
-                Close
-              </button>
+            <div className="flex flex-col gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
+                <button
+                  type="button"
+                  onClick={() => generateBusinessPlanPDF({
+                    title: selectedScheme.name,
+                    category: selectedScheme.category,
+                    profit: selectedScheme.benefit,
+                    investment: selectedScheme.ministry,
+                    roi: selectedScheme.deadline,
+                    steps: selectedScheme.steps,
+                    equipment: selectedScheme.docs,
+                    schemes: [selectedScheme.ministry, selectedScheme.category],
+                    userName: user?.name || 'Ramesh Sharma',
+                    businessLocation: user?.location || 'Jaipur, Rajasthan'
+                  })}
+                  className="flex-1 py-3 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer flex items-center justify-center gap-1.5 shadow-xs transition-all"
+                >
+                  📄 Download Scheme Guide PDF
+                </button>
+                <button
+                  type="button"
+                  onClick={() => shareOnWhatsApp(
+                    selectedScheme.name,
+                    `🏛️ Ministry: ${selectedScheme.ministry}\n💰 Benefit: ${selectedScheme.benefit}\n📋 Eligibility: ${selectedScheme.eligibility}\n📄 Documents: ${selectedScheme.docs?.join(', ')}`
+                  )}
+                  className="py-3 px-4 rounded-xl text-xs font-semibold bg-green-500 hover:bg-green-600 text-white cursor-pointer flex items-center justify-center gap-1.5 shadow-xs transition-all"
+                >
+                  📲 WhatsApp
+                </button>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-2">
+                <button
+                  onClick={() => { setSelectedScheme(null); navigate('voice') }}
+                  className="flex-1 py-3 rounded-xl text-xs font-semibold text-white gradient-btn cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <MicIcon size={15} />
+                  Ask AI to Guide Application
+                </button>
+                <button
+                  onClick={() => setSelectedScheme(null)}
+                  className="px-5 py-3 rounded-xl text-xs font-medium border border-gray-200 hover:bg-gray-50 cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1183,7 +1489,7 @@ function GovernmentSchemesPage({ navigate }: { navigate: (p: Page) => void }) {
 }
 
 // ── Business Ideas Page ──────────────────────────────────────────────────────
-function BusinessIdeasPage({ navigate }: { navigate: (p: Page) => void }) {
+function BusinessIdeasPage({ navigate, user }: { navigate: (p: Page) => void, user?: UserProfile | null }) {
   const [activeFilter, setActiveFilter] = useState('All')
   const [selectedIdea, setSelectedIdea] = useState<any | null>(null)
 
@@ -1340,20 +1646,49 @@ function BusinessIdeasPage({ navigate }: { navigate: (p: Page) => void }) {
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-2.5">
-              <button
-                onClick={() => { setSelectedIdea(null); navigate('voice') }}
-                className="flex-1 py-3 rounded-xl text-xs font-semibold text-white gradient-btn cursor-pointer flex items-center justify-center gap-2"
-              >
-                <MicIcon size={15} />
-                Generate Launch Roadmap with AI
-              </button>
-              <button
-                onClick={() => setSelectedIdea(null)}
-                className="px-5 py-3 rounded-xl text-xs font-medium border border-gray-200 hover:bg-gray-50 cursor-pointer"
-              >
-                Close
-              </button>
+            <div className="flex flex-col gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
+                <button
+                  onClick={() => generateBusinessPlanPDF({
+                    title: selectedIdea.title,
+                    category: selectedIdea.category,
+                    investment: selectedIdea.investment,
+                    profit: selectedIdea.profit,
+                    equipment: selectedIdea.equipment,
+                    schemes: [selectedIdea.subsidy],
+                    userName: user?.name || 'Ramesh Sharma',
+                    businessLocation: user?.location || 'Jaipur, Rajasthan'
+                  })}
+                  className="flex-1 py-3 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer flex items-center justify-center gap-1.5 shadow-xs transition-all"
+                >
+                  📄 Download PDF Business Plan
+                </button>
+                <button
+                  onClick={() => shareOnWhatsApp(
+                    selectedIdea.title,
+                    `💡 Investment: ${selectedIdea.investment}\n💰 Expected Profit: ${selectedIdea.profit}\n🏛️ Subsidy: ${selectedIdea.subsidy}`
+                  )}
+                  className="py-3 px-4 rounded-xl text-xs font-semibold bg-green-500 hover:bg-green-600 text-white cursor-pointer flex items-center justify-center gap-1.5 shadow-xs transition-all"
+                >
+                  📲 WhatsApp
+                </button>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-2">
+                <button
+                  onClick={() => { setSelectedIdea(null); navigate('voice') }}
+                  className="flex-1 py-3 rounded-xl text-xs font-semibold text-white gradient-btn cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <MicIcon size={15} />
+                  Ask AI Roadmap Questions
+                </button>
+                <button
+                  onClick={() => setSelectedIdea(null)}
+                  className="px-5 py-3 rounded-xl text-xs font-medium border border-gray-200 hover:bg-gray-50 cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1363,7 +1698,7 @@ function BusinessIdeasPage({ navigate }: { navigate: (p: Page) => void }) {
 }
 
 // ── Mentor Page ───────────────────────────────────────────────────────────────
-function MentorPage({ navigate }: { navigate: (p: Page) => void }) {
+function MentorPage({ navigate, user }: { navigate: (p: Page) => void, user?: UserProfile | null }) {
   const [activeType, setActiveType] = useState('All')
   const [bookingMentor, setBookingMentor] = useState<any | null>(null)
   const [bookedSuccess, setBookedSuccess] = useState<string | null>(null)
@@ -1386,19 +1721,15 @@ function MentorPage({ navigate }: { navigate: (p: Page) => void }) {
     if (bookingMentor) {
       createMentorBooking({
         mentor_name: bookingMentor.name,
-        user_name: 'Rural Entrepreneur',
-        phone_number: '+91 98765 43210',
-        business_type: bookingMentor.title,
+        user_name: user?.name || 'Ramesh Sharma',
+        phone_number: user?.phone || '+91 98765 43210',
+        business_type: user?.businessName || bookingMentor.title,
         booking_date: new Date(Date.now() + 86400000).toISOString().split('T')[0],
         time_slot: selectedDate,
         status: 'Confirmed'
       }).catch(() => {})
     }
     setBookedSuccess(bookingMentor?.name)
-    setTimeout(() => {
-      setBookedSuccess(null)
-      setBookingMentor(null)
-    }, 2800)
   }
 
   return (
@@ -1502,16 +1833,41 @@ function MentorPage({ navigate }: { navigate: (p: Page) => void }) {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
           <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-gray-100">
             {bookedSuccess ? (
-              <div className="text-center py-6">
-                <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-4">
+              <div className="text-center py-4">
+                <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-3">
                   ✓
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Session Booked Successfully!</h3>
+                <h3 className="text-xl font-bold text-gray-900 mb-1">Session Booked Successfully!</h3>
                 <p className="text-xs text-gray-600 mb-4">
-                  Aapka 1-on-1 consultation session with <strong>{bookedSuccess}</strong> confirm ho gaya hai. Meeting link SMS & WhatsApp par bhej di gayi hai.
+                  Aapka 1-on-1 consultation session with <strong>{bookedSuccess}</strong> confirm ho gaya hai.
                 </p>
-                <div className="p-3 bg-emerald-50 text-emerald-800 rounded-xl text-xs font-semibold">
+                <div className="p-3 bg-emerald-50 text-emerald-800 rounded-xl text-xs font-semibold mb-2">
                   📅 Slot: {selectedDate}
+                </div>
+                <div className="p-2.5 bg-gray-50 text-gray-600 rounded-xl text-[11px] mb-4">
+                  👤 Entrepreneur: <strong>{user?.name || 'Ramesh Sharma'}</strong> · {user?.phone || '+91 98765 43210'}
+                </div>
+                <div className="flex flex-col gap-2">
+                  <button
+                    type="button"
+                    onClick={() => shareOnWhatsApp(
+                      'Mentorship Session Confirmed',
+                      `✅ Mentor: ${bookedSuccess}\n📅 Time Slot: ${selectedDate}\n👤 Entrepreneur: ${user?.name || 'Ramesh Sharma'}\n💰 Consultation Fee: FREE (GramVoice AI Initiative)`
+                    )}
+                    className="w-full py-3 rounded-xl text-xs font-semibold bg-green-500 hover:bg-green-600 text-white cursor-pointer flex items-center justify-center gap-1.5 shadow-xs transition-all"
+                  >
+                    📲 Share Confirmation on WhatsApp
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBookedSuccess(null)
+                      setBookingMentor(null)
+                    }}
+                    className="w-full py-2.5 rounded-xl text-xs font-medium border border-gray-200 hover:bg-gray-50 text-gray-700 cursor-pointer"
+                  >
+                    Done & Close
+                  </button>
                 </div>
               </div>
             ) : (
@@ -1578,7 +1934,15 @@ function MentorPage({ navigate }: { navigate: (p: Page) => void }) {
 }
 
 // ── Dashboard ─────────────────────────────────────────────────────────────────
-function DashboardPage({ navigate }: { navigate: (p: Page) => void }) {
+function DashboardPage({
+  navigate,
+  user,
+  onOpenAuth
+}: {
+  navigate: (p: Page) => void
+  user?: UserProfile | null
+  onOpenAuth?: () => void
+}) {
   const [dbHistory, setDbHistory] = useState<VoiceChatRecord[]>([])
   const [dbBookings, setDbBookings] = useState<MentorBookingRecord[]>([])
   const [dbSaved, setDbSaved] = useState<SavedSchemeRecord[]>([])
@@ -1639,12 +2003,80 @@ function DashboardPage({ navigate }: { navigate: (p: Page) => void }) {
   return (
     <div className="min-h-screen pt-16" style={{ background: '#f7f9fc' }}>
       <div className="max-w-6xl mx-auto px-4 py-8">
+        {/* User Profile Banner / Login Prompt */}
+        {user ? (
+          <div className="mb-8 p-6 rounded-3xl bg-linear-to-r from-blue-900 via-blue-800 to-indigo-900 text-white shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div
+                className="w-16 h-16 rounded-2xl flex items-center justify-center font-bold text-2xl border-2 border-white/30 shadow-inner"
+                style={{ background: user.avatarColor || '#1a6fff' }}
+              >
+                {user.name.charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-xl font-bold">{user.name}</h2>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/30 text-emerald-200 border border-emerald-400/40 font-semibold">
+                    ✓ Verified Entrepreneur
+                  </span>
+                </div>
+                <p className="text-xs text-blue-200 mt-0.5">
+                  🏢 {user.businessName || 'Rural Business'} · 📍 {user.location || 'India'}
+                </p>
+                <p className="text-[11px] text-blue-300/80 mt-0.5">📱 {user.phone}</p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
+              <button
+                type="button"
+                onClick={() => generateBusinessPlanPDF({
+                  title: `${user.businessName || 'Rural Enterprise'} - Master Roadmap`,
+                  category: 'Comprehensive Business Dossier',
+                  investment: '₹50,000 - ₹2,00,000',
+                  profit: '₹25,000 - ₹50,000 / mo',
+                  userName: user.name,
+                  businessLocation: user.location,
+                  steps: [
+                    'Udyam Registration verified on MSME national portal.',
+                    'Gram Panchayat trade license & business bank current account active.',
+                    'Target government schemes: PM Mudra Shishu/Kishore & PM Vishwakarma.',
+                    'WhatsApp Business product catalog with digital payment QR active.'
+                  ],
+                  schemes: ['PM Mudra Yojana', 'PM Vishwakarma', 'PMEGP Subsidy']
+                })}
+                className="px-4 py-2.5 rounded-xl bg-white text-blue-900 hover:bg-blue-50 text-xs font-bold transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
+              >
+                📄 Download My Business Dossier (PDF)
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="mb-8 p-5 rounded-2xl bg-amber-50 border border-amber-200/80 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">👤</span>
+              <div>
+                <div className="text-sm font-bold text-amber-950">Guest Mode Active</div>
+                <div className="text-xs text-amber-800">Login with your mobile number to personalize your business reports & track voice history across devices.</div>
+              </div>
+            </div>
+            {onOpenAuth && (
+              <button
+                onClick={onOpenAuth}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-white gradient-btn shadow-xs hover:scale-105 transition-all cursor-pointer shrink-0"
+              >
+                👤 Login / Create Profile
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div>
             <div className="text-xs font-semibold mb-1 gradient-text uppercase tracking-widest">Dashboard</div>
             <h1 className="text-2xl font-semibold" style={{ fontFamily: "'Instrument Serif', serif", color: '#0d1117' }}>
-              Welcome back, Entrepreneur! 👋
+              {user ? `Namaste, ${user.name.split(' ')[0]} 👋` : 'Welcome back, Entrepreneur! 👋'}
             </h1>
             <p className="text-sm mt-1" style={{ color: '#7a8799' }}>Your business analytics, voice conversation history, and mentorship tracker</p>
           </div>
@@ -1997,6 +2429,13 @@ function Footer({ navigate }: { navigate: (p: Page) => void }) {
 // ── App ───────────────────────────────────────────────────────────────────────
 export default function App() {
   const [page, setPage] = useState<Page>('landing')
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => getCurrentUser())
+  const [isAuthOpen, setIsAuthOpen] = useState(false)
+
+  const handleLogout = () => {
+    logoutUser()
+    setCurrentUser(null)
+  }
 
   const navigate = (p: Page) => {
     setPage(p)
@@ -2006,19 +2445,30 @@ export default function App() {
   const renderPage = () => {
     switch (page) {
       case 'landing': return <LandingPage navigate={navigate} />
-      case 'voice': return <VoiceAssistantPage />
-      case 'schemes': return <GovernmentSchemesPage navigate={navigate} />
-      case 'ideas': return <BusinessIdeasPage navigate={navigate} />
-      case 'mentor': return <MentorPage navigate={navigate} />
-      case 'dashboard': return <DashboardPage navigate={navigate} />
+      case 'voice': return <VoiceAssistantPage user={currentUser} />
+      case 'schemes': return <GovernmentSchemesPage navigate={navigate} user={currentUser} />
+      case 'ideas': return <BusinessIdeasPage navigate={navigate} user={currentUser} />
+      case 'mentor': return <MentorPage navigate={navigate} user={currentUser} />
+      case 'dashboard': return <DashboardPage navigate={navigate} user={currentUser} onOpenAuth={() => setIsAuthOpen(true)} />
       case 'about': return <AboutPage navigate={navigate} />
     }
   }
 
   return (
     <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", minHeight: '100vh', background: '#fff' }}>
-      <Nav current={page} navigate={navigate} />
+      <Nav
+        current={page}
+        navigate={navigate}
+        user={currentUser}
+        onOpenAuth={() => setIsAuthOpen(true)}
+        onLogout={handleLogout}
+      />
       <main>{renderPage()}</main>
+      <AuthModal
+        isOpen={isAuthOpen}
+        onClose={() => setIsAuthOpen(false)}
+        onLoginSuccess={setCurrentUser}
+      />
     </div>
   )
 }

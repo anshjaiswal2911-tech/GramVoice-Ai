@@ -218,3 +218,66 @@ export async function getSavedSchemes(): Promise<SavedSchemeRecord[]> {
     return []
   }
 }
+
+// ── User Authentication & Profile Helpers ─────────────────────────────────
+export interface UserProfile {
+  id: string
+  name: string
+  phone: string
+  businessName?: string
+  location?: string
+  avatarColor?: string
+  createdAt?: string
+}
+
+export function getCurrentUser(): UserProfile | null {
+  try {
+    const raw = localStorage.getItem('gv_current_user')
+    if (raw) return JSON.parse(raw)
+  } catch {}
+  return null
+}
+
+export function loginUser(name: string, phone: string, businessName = 'Kirana & General Store', location = 'Jaipur, Rajasthan'): UserProfile {
+  const avatarColors = ['#1a6fff', '#10b981', '#8b5cf6', '#f59e0b', '#ec4899', '#0ea5e9']
+  const randomColor = avatarColors[Math.floor(Math.random() * avatarColors.length)]
+  
+  const user: UserProfile = {
+    id: 'user_' + Date.now(),
+    name: name.trim() || 'Ramesh Sharma',
+    phone: phone.trim() || '+91 98765 43210',
+    businessName: businessName.trim() || 'Rural Kirana Business',
+    location: location.trim() || 'Jaipur, Rajasthan',
+    avatarColor: randomColor,
+    createdAt: new Date().toISOString(),
+  }
+
+  try {
+    localStorage.setItem('gv_current_user', JSON.stringify(user))
+  } catch {}
+
+  // Sync with Supabase if available
+  if (supabase) {
+    supabase
+      .from('user_profiles')
+      .insert([
+        {
+          name: user.name,
+          phone: user.phone,
+          business_name: user.businessName,
+          location: user.location,
+        }
+      ])
+      .then(() => {})
+      .catch(() => {})
+  }
+
+  return user
+}
+
+export function logoutUser(): void {
+  try {
+    localStorage.removeItem('gv_current_user')
+  } catch {}
+}
+
