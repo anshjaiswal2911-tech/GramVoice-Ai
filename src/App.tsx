@@ -10,6 +10,8 @@ import {
   getCurrentUser,
   loginUser,
   logoutUser,
+  requestPhoneOtp,
+  verifyPhoneOtp,
   type VoiceChatRecord,
   type MentorBookingRecord,
   type SavedSchemeRecord,
@@ -90,26 +92,105 @@ function AuthModal({
   const [location, setLocation] = useState('Jaipur, Rajasthan')
   const [step, setStep] = useState<'input' | 'otp' | 'success'>('input')
   const [otp, setOtp] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
+  const [successMessage, setSuccessMessage] = useState('')
+  const [resendSeconds, setResendSeconds] = useState(0)
+  const [whatsappOtpUrl, setWhatsappOtpUrl] = useState('')
+
+  useEffect(() => {
+    let timer: any
+    if (resendSeconds > 0) {
+      timer = setTimeout(() => setResendSeconds(prev => prev - 1), 1000)
+    }
+    return () => clearTimeout(timer)
+  }, [resendSeconds])
 
   if (!isOpen) return null
 
-  const handleSendOtp = (e: React.FormEvent) => {
+  const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!name.trim() || !phone.trim()) {
-      alert('Kripya apna Naam aur Mobile number bharein')
+    setErrorMessage('')
+    const cleanNumber = phone.replace(/[^0-9]/g, '').slice(-10)
+
+    if (!name.trim()) {
+      setErrorMessage('Kripya apna poora naam daalein.')
       return
     }
-    setStep('otp')
+
+    if (cleanNumber.length !== 10) {
+      setErrorMessage('Kripya valid 10-digit mobile number daalein.')
+      return
+    }
+
+    setIsLoading(true)
+    try {
+      const res = await requestPhoneOtp(cleanNumber, name, businessType, location)
+      if (res.success) {
+        setSuccessMessage(res.message || `OTP sent to +91 ******${cleanNumber.slice(-4)}`)
+        setWhatsappOtpUrl(res.whatsappOtpUrl || '')
+        setResendSeconds(30)
+        setStep('otp')
+      } else {
+        setErrorMessage(res.error || 'OTP bhejte samay error aaya. Kripya punah prayas karein.')
+      }
+    } catch (err: any) {
+      setErrorMessage(err.message || 'OTP dispatch network error')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
-  const handleVerifyOtp = () => {
-    const user = loginUser(name, phone, businessType, location)
-    setStep('success')
-    setTimeout(() => {
-      onLoginSuccess(user)
-      onClose()
-      setStep('input')
-    }, 1000)
+  const handleResendOtp = async () => {
+    if (resendSeconds > 0) return
+    setErrorMessage('')
+    setIsLoading(true)
+    try {
+      const cleanNumber = phone.replace(/[^0-9]/g, '').slice(-10)
+      const res = await requestPhoneOtp(cleanNumber, name, businessType, location)
+      if (res.success) {
+        setSuccessMessage(`Naya OTP code +91 ******${cleanNumber.slice(-4)} par bhej diya gaya hai.`)
+        setWhatsappOtpUrl(res.whatsappOtpUrl || '')
+        setResendSeconds(30)
+      } else {
+        setErrorMessage(res.error || 'Resend error')
+      }
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Network error')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleVerifyOtp = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault()
+    setErrorMessage('')
+    if (otp.trim().length < 4) {
+      setErrorMessage('Kripya apne phone par aaya poora OTP code daalein.')
+      return
+    }
+
+    setIsLoading(true)
+    try {
+      const cleanNumber = phone.replace(/[^0-9]/g, '').slice(-10)
+      const res = await verifyPhoneOtp(cleanNumber, otp.trim(), name, businessType, location)
+
+      if (res.success && res.user) {
+        setStep('success')
+        setTimeout(() => {
+          onLoginSuccess(res.user!)
+          onClose()
+          setStep('input')
+          setOtp('')
+        }, 1200)
+      } else {
+        setErrorMessage(res.error || 'Galat OTP! Kripya mobile par aaya sahi code daalein.')
+      }
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Verification error')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const handleQuickDemoLogin = (demoName: string, demoBusiness: string, demoLoc: string) => {
@@ -119,14 +200,21 @@ function AuthModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
-      <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-gray-100 relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+      <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-gray-100 relative max-h-[95vh] overflow-y-auto">
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:text-gray-800 cursor-pointer"
+          className="absolute top-5 right-5 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:text-gray-800 cursor-pointer transition-all"
         >
           ✕
         </button>
+
+        {errorMessage && (
+          <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-xs font-semibold text-red-700 flex items-center gap-2">
+            <span>⚠️</span>
+            <span>{errorMessage}</span>
+          </div>
+        )}
 
         {step === 'input' && (
           <div>
@@ -136,7 +224,7 @@ function AuthModal({
               </div>
               <h2 className="text-xl font-bold text-gray-900">GramVoice AI Login</h2>
             </div>
-            <p className="text-xs text-gray-500 mb-6">Apna account login karein aur personal business dashboard access karein.</p>
+            <p className="text-xs text-gray-500 mb-5">Apna mobile number daalein. Real 6-digit OTP aapke phone par aayega.</p>
 
             <form onSubmit={handleSendOtp} className="space-y-3.5">
               <div>
@@ -152,15 +240,21 @@ function AuthModal({
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">Mobile Number (WhatsApp Enabled):</label>
-                <input
-                  type="tel"
-                  required
-                  value={phone}
-                  onChange={e => setPhone(e.target.value)}
-                  placeholder="e.g. 9876543210"
-                  className="w-full p-3 rounded-xl border border-gray-200 outline-none text-xs focus:border-blue-500 bg-gray-50/50"
-                />
+                <label className="block text-xs font-bold text-gray-700 mb-1">Mobile Number (SMS / WhatsApp):</label>
+                <div className="flex items-center gap-2">
+                  <span className="p-3 rounded-xl bg-gray-100 border border-gray-200 text-xs font-bold text-gray-600">
+                    🇮🇳 +91
+                  </span>
+                  <input
+                    type="tel"
+                    required
+                    maxLength={10}
+                    value={phone}
+                    onChange={e => setPhone(e.target.value.replace(/[^0-9]/g, ''))}
+                    placeholder="9876543210"
+                    className="flex-1 p-3 rounded-xl border border-gray-200 outline-none text-xs font-bold tracking-wider focus:border-blue-500 bg-gray-50/50"
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-2">
@@ -193,15 +287,23 @@ function AuthModal({
 
               <button
                 type="submit"
-                className="w-full py-3.5 rounded-xl text-xs font-semibold text-white gradient-btn cursor-pointer shadow-md hover:scale-102 transition-all mt-2"
+                disabled={isLoading}
+                className="w-full py-3.5 rounded-xl text-xs font-semibold text-white gradient-btn cursor-pointer shadow-md hover:scale-102 transition-all mt-2 disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                Send OTP & Login
+                {isLoading ? (
+                  <>
+                    <span className="animate-spin text-sm">⏳</span>
+                    <span>Sending Real OTP...</span>
+                  </>
+                ) : (
+                  <span>📲 Send OTP to Mobile</span>
+                )}
               </button>
             </form>
 
             <div className="mt-5 pt-4 border-t border-gray-100">
               <div className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider text-center mb-2.5">
-                ⚡ Or Instant 1-Click Demo Profile
+                ⚡ Or Instant 1-Click Demo Profiles
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <button
@@ -226,38 +328,89 @@ function AuthModal({
         )}
 
         {step === 'otp' && (
-          <div className="text-center py-4">
-            <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl mx-auto mb-3">
+          <div className="text-center py-2">
+            <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl mx-auto mb-3 shadow-inner">
               📱
             </div>
-            <h3 className="text-lg font-bold text-gray-900 mb-1">OTP Verification</h3>
-            <p className="text-xs text-gray-500 mb-4">
-              Enter 4-digit code sent to <strong>{phone}</strong> (Demo OTP: <strong>1234</strong>)
+            <h3 className="text-lg font-bold text-gray-900 mb-1">Enter Mobile OTP</h3>
+            <p className="text-xs text-gray-600 mb-1">
+              6-digit verification code aapke number <strong>+91 ******{phone.slice(-4)}</strong> par bhej diya gaya hai.
             </p>
-            <input
-              type="text"
-              maxLength={4}
-              value={otp}
-              onChange={e => setOtp(e.target.value)}
-              placeholder="1 2 3 4"
-              className="w-40 text-center tracking-widest text-lg font-bold p-3 rounded-xl border border-blue-300 outline-none mb-4 mx-auto block bg-blue-50/30"
-            />
-            <button
-              onClick={handleVerifyOtp}
-              className="w-full py-3.5 rounded-xl text-xs font-semibold text-white gradient-btn cursor-pointer shadow-md hover:scale-102 transition-all"
-            >
-              Verify & Enter GramVoice AI
-            </button>
+            <p className="text-[11px] text-gray-400 mb-4">Kripya apna phone (SMS / WhatsApp) check karein.</p>
+
+            <form onSubmit={handleVerifyOtp} className="space-y-4">
+              <input
+                type="text"
+                autoFocus
+                maxLength={6}
+                value={otp}
+                onChange={e => setOtp(e.target.value.replace(/[^0-9]/g, ''))}
+                placeholder="· · · · · ·"
+                className="w-48 text-center tracking-widest text-2xl font-bold p-3 rounded-2xl border-2 border-blue-400 outline-none mx-auto block bg-blue-50/40 text-blue-950 shadow-inner"
+              />
+
+              <button
+                type="submit"
+                disabled={isLoading || otp.length < 4}
+                className="w-full py-3.5 rounded-xl text-xs font-semibold text-white gradient-btn cursor-pointer shadow-md hover:scale-102 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
+              >
+                {isLoading ? (
+                  <>
+                    <span className="animate-spin text-sm">⏳</span>
+                    <span>Verifying OTP...</span>
+                  </>
+                ) : (
+                  <span>✓ Verify & Enter GramVoice AI</span>
+                )}
+              </button>
+            </form>
+
+            {whatsappOtpUrl && (
+              <div className="mt-3.5">
+                <a
+                  href={whatsappOtpUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-2.5 px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all"
+                >
+                  <span>📲 Get OTP Instantly on WhatsApp</span>
+                </a>
+              </div>
+            )}
+
+            <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs">
+              <button
+                type="button"
+                onClick={() => {
+                  setStep('input')
+                  setErrorMessage('')
+                  setOtp('')
+                }}
+                className="text-gray-500 hover:text-gray-800 font-medium cursor-pointer"
+              >
+                ✏️ Change Number
+              </button>
+
+              <button
+                type="button"
+                onClick={handleResendOtp}
+                disabled={resendSeconds > 0 || isLoading}
+                className="text-blue-600 hover:text-blue-800 font-bold disabled:text-gray-400 cursor-pointer"
+              >
+                {resendSeconds > 0 ? `Resend OTP (${resendSeconds}s)` : '🔄 Resend OTP'}
+              </button>
+            </div>
           </div>
         )}
 
         {step === 'success' && (
           <div className="text-center py-8">
-            <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-3">
+            <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-3 shadow-inner">
               ✓
             </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-1">Welcome, {name || 'Entrepreneur'}!</h3>
-            <p className="text-xs text-gray-500">Aapka account verify ho gaya hai. Personalized dashboard khul raha hai...</p>
+            <h3 className="text-xl font-bold text-gray-900 mb-1">Mobile Verified!</h3>
+            <p className="text-xs text-gray-600 mb-2">Welcome, <strong>{name || 'Entrepreneur'}</strong>!</p>
+            <p className="text-[11px] text-gray-400">Aapka account verify ho gaya hai. Dashboard khul raha hai...</p>
           </div>
         )}
       </div>
