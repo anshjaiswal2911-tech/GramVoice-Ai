@@ -366,6 +366,7 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
   const [showKeyInput, setShowKeyInput] = useState(false)
   const [keyDraft, setKeyDraft] = useState('')
   const [keyError, setKeyError] = useState('')
+  const [copiedIdx, setCopiedIdx] = useState<number | null>(null)
   const chatRef = useRef<HTMLDivElement>(null)
   const recognitionRef = useRef<any>(null)
   const silenceTimerRef = useRef<any>(null)
@@ -723,7 +724,7 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
         clearTimeout(silenceTimerRef.current)
         silenceTimerRef.current = null
       }
-      if (state === 'listening' || latestTranscriptRef.current.trim()) {
+      if (latestTranscriptRef.current.trim()) {
         submitVoiceQuery(latestTranscriptRef.current)
       } else {
         setState('idle')
