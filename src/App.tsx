@@ -1642,12 +1642,7 @@ function DashboardPage({ navigate }: { navigate: (p: Page) => void }) {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-xs font-semibold gradient-text uppercase tracking-widest">Dashboard</span>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200">
-                ● Live Database Active
-              </span>
-            </div>
+            <div className="text-xs font-semibold mb-1 gradient-text uppercase tracking-widest">Dashboard</div>
             <h1 className="text-2xl font-semibold" style={{ fontFamily: "'Instrument Serif', serif", color: '#0d1117' }}>
               Welcome back, Entrepreneur! 👋
             </h1>
@@ -1682,7 +1677,6 @@ function DashboardPage({ navigate }: { navigate: (p: Page) => void }) {
               <div className="flex items-center justify-between mb-5">
                 <div>
                   <h2 className="font-semibold" style={{ color: '#0d1117' }}>Recent Voice & Chat History</h2>
-                  <p className="text-xs text-gray-500">Stored in database for instant recall</p>
                 </div>
                 <button onClick={() => navigate('voice')} className="text-xs font-semibold cursor-pointer" style={{ color: '#1a6fff' }}>Open Voice Assistant</button>
               </div>
