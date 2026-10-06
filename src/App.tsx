@@ -413,61 +413,64 @@ function VoiceAssistantPage({ navigate }: { navigate: (page: Page) => void }) {
     }
   }, [])
 
-  // ── Best Male Voice Selector Helper ─────────────────────────────────────────
+  // ── Male Voice Selector & Tuner Helper ──────────────────────────────────────
   const getBestMaleVoice = (voices: SpeechSynthesisVoice[], isHindi: boolean) => {
     const femaleExclude = [
       'lekha', 'neerja', 'kalpana', 'sangeeta', 'heera', 'zira', 'samantha',
       'karen', 'victoria', 'veena', 'aditi', 'swara', 'priya', 'pooja',
-      'female', 'woman', 'girl', 'catherine', 'helena', 'moira', 'tessa', 'fiona', 'zira'
+      'female', 'woman', 'girl', 'catherine', 'helena', 'moira', 'tessa', 'fiona',
+      'hazel', 'susan', 'allison', 'ava', 'kate', 'serena', 'agnes', 'kathy', 'vicki',
+      'princess', 'ting-ting', 'kyoko', 'sin-ji', 'yuna', 'miren',
+      'x-hia', 'x-hid', 'x-hif', 'ananya', 'shruti', 'kavya', 'deepa', 'pallavi',
+      'alva', 'klara', 'monica', 'amira', 'nora', 'sara', 'damayanti', 'yuri'
+    ]
+
+    const maleKeywords = [
+      'hemant', 'neel', 'rishi', 'ravi', 'madhav', 'prabhat', 'david', 'mark',
+      'alex', 'guy', 'daniel', 'george', 'arthur', 'oliver', 'fred', 'tom',
+      'male', 'man', 'boy', 'deep', 'tarun', 'hi-in-x-hie', 'hi-in-x-hic',
+      'en-in-x-ene', 'en-in-x-end', 'en-us-x-sfg', 'en-us-x-iob'
     ]
 
     if (isHindi) {
       // 1. Direct Male Hindi Voice matches
       const maleHindi = voices.find(v =>
         (v.lang.startsWith('hi') || v.name.toLowerCase().includes('hindi')) &&
-        (v.name.toLowerCase().includes('hemant') ||
-         v.name.toLowerCase().includes('neel') ||
-         v.name.toLowerCase().includes('rishi') ||
-         v.name.toLowerCase().includes('male') ||
-         v.name.toLowerCase().includes('madhav') ||
-         v.name.toLowerCase().includes('deep'))
+        maleKeywords.some(m => v.name.toLowerCase().includes(m))
       )
       if (maleHindi) return maleHindi
 
-      // 2. Hindi voice that is not female-named
+      // 2. Hindi voice that is not in the female exclude list
       const neutralHindi = voices.find(v =>
         (v.lang.startsWith('hi') || v.name.toLowerCase().includes('hindi')) &&
         !femaleExclude.some(f => v.name.toLowerCase().includes(f))
       )
       if (neutralHindi) return neutralHindi
 
-      // 3. Fallback to any Hindi voice
+      // 3. Indian English male voice (like Rishi/Neel)
+      const indianMale = voices.find(v =>
+        (v.lang.includes('IN') || v.name.toLowerCase().includes('india')) &&
+        maleKeywords.some(m => v.name.toLowerCase().includes(m)) &&
+        !femaleExclude.some(f => v.name.toLowerCase().includes(f))
+      )
+      if (indianMale) return indianMale
+
+      // 4. Any Hindi voice fallback (pitch will be lowered to masculine tone)
       return voices.find(v => v.lang.startsWith('hi') || v.name.toLowerCase().includes('hindi'))
     } else {
-      // English Male Voice matches
       // 1. Indian English Male
       const maleIndianEn = voices.find(v =>
         (v.lang.startsWith('en-IN') || v.name.toLowerCase().includes('india')) &&
-        (v.name.toLowerCase().includes('rishi') ||
-         v.name.toLowerCase().includes('ravi') ||
-         v.name.toLowerCase().includes('neel') ||
-         v.name.toLowerCase().includes('male') ||
-         v.name.toLowerCase().includes('prabhat'))
+        maleKeywords.some(m => v.name.toLowerCase().includes(m)) &&
+        !femaleExclude.some(f => v.name.toLowerCase().includes(f))
       )
       if (maleIndianEn) return maleIndianEn
 
       // 2. Global Male English Voices
       const maleGlobalEn = voices.find(v =>
         v.lang.startsWith('en') &&
-        (v.name.toLowerCase().includes('david') ||
-         v.name.toLowerCase().includes('mark') ||
-         v.name.toLowerCase().includes('guy') ||
-         v.name.toLowerCase().includes('alex') ||
-         v.name.toLowerCase().includes('daniel') ||
-         v.name.toLowerCase().includes('arthur') ||
-         v.name.toLowerCase().includes('george') ||
-         v.name.toLowerCase().includes('oliver') ||
-         v.name.toLowerCase().includes('male'))
+        maleKeywords.some(m => v.name.toLowerCase().includes(m)) &&
+        !femaleExclude.some(f => v.name.toLowerCase().includes(f))
       )
       if (maleGlobalEn) return maleGlobalEn
 
@@ -530,7 +533,7 @@ function VoiceAssistantPage({ navigate }: { navigate: (page: Page) => void }) {
 
       if (!cleanText) return
 
-      // Delay by 80ms for mobile audio hardware transition
+      // Delay by 80ms for mobile/desktop audio hardware transition
       setTimeout(() => {
         if (isSpeakingCancelledRef.current) return
 
@@ -538,6 +541,15 @@ function VoiceAssistantPage({ navigate }: { navigate: (page: Page) => void }) {
           window.speechSynthesis.resume()
           const voices = window.speechSynthesis.getVoices() || []
           const selectedVoice = getBestMaleVoice(voices, isHindi)
+
+          // Check if the selected voice is a female fallback
+          const femaleList = [
+            'lekha', 'neerja', 'kalpana', 'sangeeta', 'heera', 'zira', 'samantha',
+            'karen', 'victoria', 'veena', 'aditi', 'swara', 'priya', 'pooja',
+            'female', 'woman', 'girl', 'catherine', 'helena', 'moira', 'tessa', 'fiona'
+          ]
+          const voiceName = selectedVoice?.name.toLowerCase() || ''
+          const isFallbackFemale = femaleList.some(f => voiceName.includes(f))
 
           // Split into sentences for smooth, stutter-free streaming playback
           const sentences = cleanText.match(/[^।?!.\n]+[।?!.\n]*/g)?.map(s => s.trim()).filter(Boolean) || [cleanText]
@@ -560,13 +572,14 @@ function VoiceAssistantPage({ navigate }: { navigate: (page: Page) => void }) {
             if (isHindi) {
               utter.lang = 'hi-IN'
               if (selectedVoice) utter.voice = selectedVoice
-              utter.pitch = 0.88 // Resonant, confident male pitch
-              utter.rate = 0.95
+              // If voice is a female fallback on MacOS/iOS, drop pitch to 0.70 to shift formant to deep male tone
+              utter.pitch = isFallbackFemale ? 0.70 : 0.82
+              utter.rate = 0.94
             } else {
               utter.lang = 'en-IN'
               if (selectedVoice) utter.voice = selectedVoice
-              utter.pitch = 0.90 // Confident, clear male pitch
-              utter.rate = 0.98
+              utter.pitch = isFallbackFemale ? 0.72 : 0.85
+              utter.rate = 0.96
             }
 
             utter.volume = 1.0
@@ -839,8 +852,8 @@ function VoiceAssistantPage({ navigate }: { navigate: (page: Page) => void }) {
   }
 
   const stateLabel = voiceLang === 'hi-IN'
-    ? { idle: 'माइक टैप करके बोलें', listening: 'सुन रहा हूँ...', processing: 'सोच रहा हूँ...', speaking: 'बोल रहा हूँ (Male Voice)...' }[state]
-    : { idle: 'Tap mic to speak', listening: 'Listening...', processing: 'Thinking...', speaking: 'Speaking (Male Voice)...' }[state]
+    ? { idle: 'माइक टैप करके बोलें', listening: 'सुन रहा हूँ...', processing: 'सोच रहा हूँ...', speaking: 'बोल रहा हूँ...' }[state]
+    : { idle: 'Tap mic to speak', listening: 'Listening...', processing: 'Thinking...', speaking: 'Speaking...' }[state]
 
   const stateColor = { idle: '#1a6fff', listening: '#10b981', processing: '#f59e0b', speaking: '#8b5cf6' }[state]
 
@@ -871,8 +884,8 @@ function VoiceAssistantPage({ navigate }: { navigate: (page: Page) => void }) {
           </h1>
           <p className="text-sm" style={{ color: '#7a8799' }}>
             {voiceLang === 'hi-IN'
-              ? 'हिंदी और इंग्लिश में बोलें — एआई सलाहकार पुरुष आवाज़ (Male Voice) में जवाब देगा'
-              : 'Speak in English or Hindi — AI mentor responds in natural Male Voice'}
+              ? 'हिंदी और इंग्लिश में बोलें — तुरंत सटीक बिजनेस गाइडेंस पाएं'
+              : 'Speak in English or Hindi — Get instant expert business guidance'}
           </p>
         </div>
 
@@ -883,12 +896,9 @@ function VoiceAssistantPage({ navigate }: { navigate: (page: Page) => void }) {
         >
           <div className="flex items-center gap-2 text-xs font-medium" style={{ color: '#065f46' }}>
             <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-            GramVoice AI Live — Dual Language Male Voice Mentor
+            GramVoice AI Live — Smart Voice Assistant
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-[11px] font-semibold text-blue-700 bg-blue-100 px-2.5 py-0.5 rounded-full">
-              🎙️ Male Voice Active
-            </span>
             <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full">
               {voiceLang === 'hi-IN' ? '🇮🇳 हिन्दी मोड' : '🇬🇧 English Mode'}
             </span>
@@ -910,7 +920,7 @@ function VoiceAssistantPage({ navigate }: { navigate: (page: Page) => void }) {
                   <div className="flex items-center gap-1.5">
                     <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
                     <span className="text-xs" style={{ color: '#7a8799' }}>
-                      {voiceLang === 'hi-IN' ? 'लाइव बिज़नेस मेंटर (पुरुष आवाज़)' : 'Live Business Mentor (Male Voice)'}
+                      {voiceLang === 'hi-IN' ? 'लाइव बिज़नेस मेंटर' : 'Live Business Mentor'}
                     </span>
                   </div>
                 </div>
@@ -963,7 +973,7 @@ function VoiceAssistantPage({ navigate }: { navigate: (page: Page) => void }) {
                         className="text-[11px] font-medium text-blue-700 bg-blue-50/90 hover:bg-blue-100 border border-blue-200/80 px-2.5 py-1 rounded-lg flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
                       >
                         <VolumeIcon size={12} className={state === 'speaking' ? 'text-red-500' : 'text-blue-600'} />
-                        <span>{state === 'speaking' ? '⏹️ Rokein (Stop)' : '🔊 Sunein (Male Voice)'}</span>
+                        <span>{state === 'speaking' ? '⏹️ Rokein (Stop)' : '🔊 Sunein'}</span>
                       </button>
 
                       <button
@@ -1089,7 +1099,7 @@ function VoiceAssistantPage({ navigate }: { navigate: (page: Page) => void }) {
               <div className="text-xs text-center max-w-[240px] leading-relaxed" style={{ color: '#7a8799' }}>
                 {state === 'idle' ? (voiceLang === 'hi-IN' ? 'माइक टैप करें और हिंदी में अपना बिज़नेस सवाल पूछें' : 'Tap mic and ask your business query in English') :
                   state === 'listening' ? '🟢 बोलते रहिए... बोलना रुकते ही ऑटो-सबमिट हो जाएगा या नीचे Send टैप करें' :
-                  state === 'processing' ? '⚡ ग्रामवॉइस एआई जवाब तैयार कर रहा है...' : '🔊 पुरुष सलाहकार (Male Voice) में जवाब सुनाया जा रहा है...'}
+                  state === 'processing' ? '⚡ ग्रामवॉइस एआई जवाब तैयार कर रहा है...' : (voiceLang === 'hi-IN' ? '🔊 एआई जवाब सुना रहा है...' : '🔊 AI is speaking...')}
               </div>
 
               {state === 'listening' && (
