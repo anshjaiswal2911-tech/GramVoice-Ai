@@ -1160,6 +1160,19 @@ function GovernmentSchemesPage({ navigate }: { navigate: (p: Page) => void }) {
   const [isListening, setIsListening] = useState(false)
   const [savedSchemes, setSavedSchemes] = useState<string[]>([])
   const [toastMsg, setToastMsg] = useState<string | null>(null)
+  const [copiedPortal, setCopiedPortal] = useState(false)
+
+  const handleOpenPortal = (url: string) => {
+    if (!url) return
+    try {
+      const opened = window.open(url, '_blank', 'noopener,noreferrer')
+      if (!opened || opened.closed || typeof opened.closed === 'undefined') {
+        window.location.assign(url)
+      }
+    } catch {
+      window.location.assign(url)
+    }
+  }
 
   useEffect(() => {
     getSavedSchemes().then(list => {
@@ -1478,19 +1491,23 @@ function GovernmentSchemesPage({ navigate }: { navigate: (p: Page) => void }) {
                   </div>
                 </div>
 
-                <div className="flex gap-2 pt-2">
+                <div className="flex items-center gap-2 pt-2">
                   <button
                     onClick={() => setSelectedScheme(s)}
                     className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-white gradient-btn cursor-pointer transition-all hover:scale-102"
                   >
-                    Apply Now
+                    View Details & Apply
                   </button>
                   <button
-                    onClick={() => setSelectedScheme(s)}
-                    className="px-4 py-2.5 rounded-xl text-xs font-medium border cursor-pointer hover:bg-gray-50 transition-all"
-                    style={{ color: '#3d4755', borderColor: '#e2e8f0' }}
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleOpenPortal(s.portalUrl)
+                    }}
+                    className="px-3 py-2.5 rounded-xl text-xs font-semibold border cursor-pointer hover:bg-emerald-50 text-emerald-700 border-emerald-300 bg-emerald-50/50 transition-all flex items-center gap-1.5 shadow-xs"
+                    title={`Open ${s.name} official portal`}
                   >
-                    Details
+                    <span>🌐</span> Portal ↗
                   </button>
                 </div>
               </div>
@@ -1561,15 +1578,27 @@ function GovernmentSchemesPage({ navigate }: { navigate: (p: Page) => void }) {
 
             {/* Modal Actions */}
             <div className="space-y-2.5">
-              <a
-                href={selectedScheme.portalUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full py-3 px-4 rounded-xl text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 cursor-pointer flex items-center justify-center gap-2 transition-all shadow-md"
+              <button
+                type="button"
+                onClick={() => handleOpenPortal(selectedScheme.portalUrl)}
+                className="w-full py-3.5 px-4 rounded-xl text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 active:scale-98 cursor-pointer flex items-center justify-center gap-2 transition-all shadow-md"
               >
-                <span>🌐</span> Open Official Government Portal to Apply
-              </a>
-              <div className="flex gap-2">
+                <span className="text-base">🌐</span> Open Official Government Portal to Apply ↗
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(selectedScheme.portalUrl)
+                  setCopiedPortal(true)
+                  setTimeout(() => setCopiedPortal(false), 2000)
+                }}
+                className="w-full py-2 px-3 rounded-xl text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 cursor-pointer flex items-center justify-center gap-1.5 transition-all"
+              >
+                <span>{copiedPortal ? '✓ Portal Link Copied to Clipboard!' : `📋 Copy Official Portal Link (${selectedScheme.portalUrl})`}</span>
+              </button>
+
+              <div className="flex gap-2 pt-1">
                 <button
                   onClick={() => handleAskAI(selectedScheme)}
                   className="flex-1 py-3 rounded-xl text-xs font-semibold text-white gradient-btn cursor-pointer flex items-center justify-center gap-2"
