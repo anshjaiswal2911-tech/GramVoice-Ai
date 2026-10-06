@@ -353,18 +353,15 @@ function LandingPage({ navigate }: { navigate: (p: Page) => void }) {
 }
 
 // ── Voice Assistant Page ─────────────────────────────────────────────────────
-function VoiceAssistantPage() {
 type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
 
+function VoiceAssistantPage({ navigate }: { navigate: (page: Page) => void }) {
   const [state, setState] = useState<VoiceState>('idle')
   const [voiceLang, setVoiceLang] = useState<'hi-IN' | 'en-IN'>('hi-IN')
   const [messages, setMessages] = useState<{ role: string; text: string }[]>([
-    { role: 'ai', text: 'Namaste! Main GramVoice AI hoon. Business registration, government schemes, loans, marketing — kuch bhi pucho, Hindi ya English mein. Mic tap karo ya type karo! 🎤' },
+    { role: 'ai', text: 'नमस्ते! मैं ग्रामवॉइस एआई हूँ। बिजनेस रजिस्ट्रेशन, सरकारी योजनाएं, लोन, या मार्केटिंग — कुछ भी पूछिए। माइक टैप करके बोलें या टाइप करें! 🎤' },
   ])
   const [inputText, setInputText] = useState('')
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem('gv_gemini_key') || '')
-  const [showKeyInput, setShowKeyInput] = useState(false)
-  const [keyDraft, setKeyDraft] = useState('')
   const [keyError, setKeyError] = useState('')
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null)
   const chatRef = useRef<HTMLDivElement>(null)
@@ -379,16 +376,6 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
     }, 100)
   }
 
-  const saveKey = () => {
-    const k = keyDraft.trim()
-    if (k.length < 20) { setKeyError('Key bahut chhoti hai — poori key paste karo'); return }
-    localStorage.setItem('gv_gemini_key', k)
-    setApiKey(k)
-    setShowKeyInput(false)
-    setKeyDraft('')
-    setKeyError('')
-  }
-
   const stopSpeaking = () => {
     isSpeakingCancelledRef.current = true
     if ('speechSynthesis' in window) {
@@ -397,6 +384,20 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
       } catch {}
     }
     setState('idle')
+  }
+
+  const handleLanguageChange = (lang: 'hi-IN' | 'en-IN') => {
+    setVoiceLang(lang)
+    stopSpeaking()
+    if (lang === 'hi-IN') {
+      setMessages([
+        { role: 'ai', text: 'नमस्ते! मैं ग्रामवॉइस एआई हूँ। बिजनेस रजिस्ट्रेशन, सरकारी योजनाएं, लोन, या मार्केटिंग — कुछ भी पूछिए। माइक टैप करके बोलें या टाइप करें! 🎤' },
+      ])
+    } else {
+      setMessages([
+        { role: 'ai', text: 'Hello! I am GramVoice AI, your business mentor. Ask me about government schemes, loans, business registration, or marketing. Tap the mic to speak or type your question! 🎤' },
+      ])
+    }
   }
 
   useEffect(() => {
@@ -412,6 +413,75 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
     }
   }, [])
 
+  // ── Best Male Voice Selector Helper ─────────────────────────────────────────
+  const getBestMaleVoice = (voices: SpeechSynthesisVoice[], isHindi: boolean) => {
+    const femaleExclude = [
+      'lekha', 'neerja', 'kalpana', 'sangeeta', 'heera', 'zira', 'samantha',
+      'karen', 'victoria', 'veena', 'aditi', 'swara', 'priya', 'pooja',
+      'female', 'woman', 'girl', 'catherine', 'helena', 'moira', 'tessa', 'fiona', 'zira'
+    ]
+
+    if (isHindi) {
+      // 1. Direct Male Hindi Voice matches
+      const maleHindi = voices.find(v =>
+        (v.lang.startsWith('hi') || v.name.toLowerCase().includes('hindi')) &&
+        (v.name.toLowerCase().includes('hemant') ||
+         v.name.toLowerCase().includes('neel') ||
+         v.name.toLowerCase().includes('rishi') ||
+         v.name.toLowerCase().includes('male') ||
+         v.name.toLowerCase().includes('madhav') ||
+         v.name.toLowerCase().includes('deep'))
+      )
+      if (maleHindi) return maleHindi
+
+      // 2. Hindi voice that is not female-named
+      const neutralHindi = voices.find(v =>
+        (v.lang.startsWith('hi') || v.name.toLowerCase().includes('hindi')) &&
+        !femaleExclude.some(f => v.name.toLowerCase().includes(f))
+      )
+      if (neutralHindi) return neutralHindi
+
+      // 3. Fallback to any Hindi voice
+      return voices.find(v => v.lang.startsWith('hi') || v.name.toLowerCase().includes('hindi'))
+    } else {
+      // English Male Voice matches
+      // 1. Indian English Male
+      const maleIndianEn = voices.find(v =>
+        (v.lang.startsWith('en-IN') || v.name.toLowerCase().includes('india')) &&
+        (v.name.toLowerCase().includes('rishi') ||
+         v.name.toLowerCase().includes('ravi') ||
+         v.name.toLowerCase().includes('neel') ||
+         v.name.toLowerCase().includes('male') ||
+         v.name.toLowerCase().includes('prabhat'))
+      )
+      if (maleIndianEn) return maleIndianEn
+
+      // 2. Global Male English Voices
+      const maleGlobalEn = voices.find(v =>
+        v.lang.startsWith('en') &&
+        (v.name.toLowerCase().includes('david') ||
+         v.name.toLowerCase().includes('mark') ||
+         v.name.toLowerCase().includes('guy') ||
+         v.name.toLowerCase().includes('alex') ||
+         v.name.toLowerCase().includes('daniel') ||
+         v.name.toLowerCase().includes('arthur') ||
+         v.name.toLowerCase().includes('george') ||
+         v.name.toLowerCase().includes('oliver') ||
+         v.name.toLowerCase().includes('male'))
+      )
+      if (maleGlobalEn) return maleGlobalEn
+
+      // 3. Non-female English
+      const neutralEn = voices.find(v =>
+        v.lang.startsWith('en') &&
+        !femaleExclude.some(f => v.name.toLowerCase().includes(f))
+      )
+      if (neutralEn) return neutralEn
+
+      return voices.find(v => v.lang.startsWith('en'))
+    }
+  }
+
   const speakText = (rawText: string) => {
     if (!('speechSynthesis' in window)) return
 
@@ -421,22 +491,35 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
     try {
       window.speechSynthesis.resume()
 
-      // Comprehensive voice normalization for clear Indian pronunciation
+      const hasDevanagari = /[\u0900-\u097F]/.test(rawText)
+      const hindiKeywords = /\b(kaise|kya|kyu|kitna|yojana|sarkari|loan|paise|batao|karein|chahiye|mera|hai|milega|dukan|shuru|rupaye|lakh)\b/i
+      const isHindi = hasDevanagari || (voiceLang === 'hi-IN' && hindiKeywords.test(rawText)) || voiceLang === 'hi-IN'
+
+      // Comprehensive voice normalization for clear natural pronunciation
       let cleanText = rawText
-        // Replace rupee symbol and amounts
-        .replace(/₹\s*([0-9,]+)/g, '$1 रुपये ')
-        .replace(/\bRs\.?\s*([0-9,]+)/gi, '$1 रुपये ')
-        // Replace percentages and symbols
-        .replace(/%/g, ' प्रतिशत ')
-        .replace(/&/g, ' और ')
-        .replace(/\//g, ' या ')
-        // Spell out common business abbreviations for clear voice readout
-        .replace(/\bMSME\b/g, 'एम एस एम ई')
-        .replace(/\bGST\b/g, 'जी एस टी')
-        .replace(/\bPM\b/g, 'पी एम')
-        .replace(/\bFSSAI\b/g, 'एफ एस एस ए आई')
-        .replace(/\bPMEGP\b/g, 'पी एम ई जी पी')
-        // Clean markdown, brackets, bullets, asterisks, hashes
+
+      if (isHindi) {
+        cleanText = cleanText
+          .replace(/₹\s*([0-9,]+)/g, '$1 रुपये ')
+          .replace(/\bRs\.?\s*([0-9,]+)/gi, '$1 रुपये ')
+          .replace(/%/g, ' प्रतिशत ')
+          .replace(/&/g, ' और ')
+          .replace(/\//g, ' या ')
+          .replace(/\bMSME\b/g, 'एम एस एम ई')
+          .replace(/\bGST\b/g, 'जी एस टी')
+          .replace(/\bPM\b/g, 'पी एम')
+          .replace(/\bFSSAI\b/g, 'एफ एस एस ए आई')
+          .replace(/\bPMEGP\b/g, 'पी एम ई जी पी')
+      } else {
+        cleanText = cleanText
+          .replace(/₹\s*([0-9,]+)/g, '$1 Rupees ')
+          .replace(/\bRs\.?\s*([0-9,]+)/gi, '$1 Rupees ')
+          .replace(/%/g, ' percent ')
+          .replace(/&/g, ' and ')
+          .replace(/\//g, ' or ')
+      }
+
+      cleanText = cleanText
         .replace(/[*#_`~|]/g, ' ')
         .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
         .replace(/\bhttps?:\/\/\S+/gi, '')
@@ -454,9 +537,9 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
         try {
           window.speechSynthesis.resume()
           const voices = window.speechSynthesis.getVoices() || []
-          const hasDevanagari = /[\u0900-\u097F]/.test(cleanText)
+          const selectedVoice = getBestMaleVoice(voices, isHindi)
 
-          // Split into sentences for smooth, stutter-free playback on mobile browsers
+          // Split into sentences for smooth, stutter-free streaming playback
           const sentences = cleanText.match(/[^।?!.\n]+[।?!.\n]*/g)?.map(s => s.trim()).filter(Boolean) || [cleanText]
 
           let currentIndex = 0
@@ -474,31 +557,18 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
 
             const utter = new SpeechSynthesisUtterance(sentence)
 
-            if (hasDevanagari || voiceLang === 'hi-IN') {
+            if (isHindi) {
               utter.lang = 'hi-IN'
-              const hiVoice = voices.find(v =>
-                v.lang.startsWith('hi') ||
-                v.name.toLowerCase().includes('hindi') ||
-                v.name.toLowerCase().includes('lekha') ||
-                v.name.toLowerCase().includes('neerja') ||
-                v.name.toLowerCase().includes('kalpana') ||
-                v.name.toLowerCase().includes('hemant')
-              )
-              if (hiVoice) utter.voice = hiVoice
+              if (selectedVoice) utter.voice = selectedVoice
+              utter.pitch = 0.88 // Resonant, confident male pitch
+              utter.rate = 0.95
             } else {
               utter.lang = 'en-IN'
-              const enVoice = voices.find(v =>
-                v.lang.startsWith('en-IN') ||
-                v.name.toLowerCase().includes('india') ||
-                v.name.toLowerCase().includes('rishi') ||
-                v.name.toLowerCase().includes('sangeeta') ||
-                v.name.toLowerCase().includes('heera')
-              ) || voices.find(v => v.lang.startsWith('en'))
-              if (enVoice) utter.voice = enVoice
+              if (selectedVoice) utter.voice = selectedVoice
+              utter.pitch = 0.90 // Confident, clear male pitch
+              utter.rate = 0.98
             }
 
-            utter.rate = 0.93
-            utter.pitch = 1.02
             utter.volume = 1.0
 
             utter.onstart = () => {
@@ -541,6 +611,12 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
     setState('processing')
     setKeyError('')
 
+    // Auto-detect question language
+    const hasDevanagari = /[\u0900-\u097F]/.test(question)
+    const hindiKeywords = /\b(kaise|kya|kyu|kitna|yojana|sarkari|loan|paise|batao|karein|chahiye|mera|hai|milega|dukan|shuru)\b/i
+    const isHindiQuery = hasDevanagari || hindiKeywords.test(question) || voiceLang === 'hi-IN'
+    const targetLang = isHindiQuery ? 'hi-IN' : 'en-IN'
+
     const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/$/, '')
     try {
       const res = await fetch(`${API_BASE_URL}/api/chat`, {
@@ -550,6 +626,7 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
         },
         body: JSON.stringify({
           message: question,
+          language: targetLang,
         }),
       })
 
@@ -562,7 +639,9 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
       const answer =
         data.reply ||
         data.response ||
-        'Sorry, response nahi mili. Please try again.'
+        (targetLang === 'hi-IN'
+          ? 'माफ़ कीजिए, उत्तर प्राप्त नहीं हुआ। कृपया दोबारा पूछें।'
+          : 'Sorry, could not fetch response. Please try asking again.')
 
       setMessages(prev => [
         ...prev,
@@ -576,21 +655,27 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
       speakText(answer)
 
       // Persist in Supabase Database / Local sync
-      saveVoiceChat(question, answer, voiceLang).catch(() => {})
+      saveVoiceChat(question, answer, targetLang).catch(() => {})
 
     } catch (error: any) {
       console.error('GramVoice AI Error:', error)
+
+      const fallbackText = targetLang === 'hi-IN'
+        ? 'सर्वर कनेक्ट हो रहा है (Render cold start)। कृपया 10-15 सेकंड इंतज़ार करके दोबारा पूछें!'
+        : 'Server is connecting (Render cold start). Please wait 10-15 seconds and try again!'
 
       setMessages(prev => [
         ...prev,
         {
           role: 'ai',
-          text: 'Server connect ho raha hai (Render cold start). Kripya 15-20 second intezaar karke apna sawaal dubara bhejein!',
+          text: fallbackText,
         },
       ])
 
       setKeyError(
-        'Server wake up ho raha hai. Kripya thoda intezaar karke dubara try karein.'
+        targetLang === 'hi-IN'
+          ? 'सर्वर वेक अप हो रहा है। कृपया दोबारा ट्राई करें।'
+          : 'Server is waking up. Please try again in a few seconds.'
       )
 
       setState('idle')
@@ -651,7 +736,7 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
       return
     }
 
-    // Warm up and prime audio output on touch gesture for iOS Safari
+    // Warm up and prime audio output on touch gesture for mobile browsers
     if ('speechSynthesis' in window) {
       try {
         window.speechSynthesis.cancel()
@@ -711,11 +796,11 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
 
       setState('idle')
       if (e.error === 'not-allowed') {
-        setKeyError('Microphone permission blocked. Safari Settings me jakar Microphone allow karein.')
+        setKeyError(voiceLang === 'hi-IN' ? 'माइक परमिशन ब्लॉक है। ब्राउज़र सेटिंग्स में जाकर माइक्रोफोन अलाउ करें।' : 'Microphone permission blocked. Please allow mic in browser settings.')
       } else if (e.error === 'no-speech') {
-        setKeyError('Voice detect nahi hui. Kripya dobara mic tap karein ya English/Hindi select karein.')
+        setKeyError(voiceLang === 'hi-IN' ? 'आवाज़ डिटेक्ट नहीं हुई। कृपया दोबारा माइक टैप करके बोलें।' : 'No speech detected. Please tap mic and speak again.')
       } else {
-        setKeyError('Voice detect karne me dikkat aayi. Kripya dobara mic tap karein ya type karein.')
+        setKeyError(voiceLang === 'hi-IN' ? 'आवाज़ डिटेक्ट करने में दिक्कत आई। कृपया दोबारा बोलें या टाइप करें।' : 'Speech detection issue. Please speak again or type.')
       }
     }
 
@@ -753,41 +838,68 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
     await callGemini(q)
   }
 
-  const stateLabel = { idle: 'Tap to speak', listening: 'Sun raha hoon...', processing: 'Soch raha hoon...', speaking: 'Bol raha hoon...' }[state]
+  const stateLabel = voiceLang === 'hi-IN'
+    ? { idle: 'माइक टैप करके बोलें', listening: 'सुन रहा हूँ...', processing: 'सोच रहा हूँ...', speaking: 'बोल रहा हूँ (Male Voice)...' }[state]
+    : { idle: 'Tap mic to speak', listening: 'Listening...', processing: 'Thinking...', speaking: 'Speaking (Male Voice)...' }[state]
+
   const stateColor = { idle: '#1a6fff', listening: '#10b981', processing: '#f59e0b', speaking: '#8b5cf6' }[state]
 
-  const suggestions = [
-    'Business register kaise karein?',
-    'PM Mudra Loan ke liye kaise apply karein?',
-    'WhatsApp pe marketing kaise karein?',
-    'Kirana store ke liye loan kaise milega?',
-    'GST registration process kya hai?',
+  const suggestionsHindi = [
+    'PM Mudra Loan के लिए कैसे अप्लाई करें?',
+    'गांव में ₹20,000 में कौन सा बिजनेस शुरू करें?',
+    'PMEGP लोन पर 35% सब्सिडी कैसे मिलती है?',
+    'MSME Udyam सर्टिफिकेट कैसे बनाएं?',
+    'WhatsApp से दुकान का सामान कैसे बेचें?',
   ]
+
+  const suggestionsEnglish = [
+    'How to apply for PM Mudra Loan up to ₹10 Lakh?',
+    'What are the best low-investment village business ideas?',
+    'How to get 35% subsidy under PMEGP scheme?',
+    'How to register for MSME Udyam certificate?',
+    'How to sell agricultural products online via WhatsApp?',
+  ]
+
+  const activeSuggestions = voiceLang === 'hi-IN' ? suggestionsHindi : suggestionsEnglish
 
   return (
     <div className="min-h-screen pt-16" style={{ background: '#f7f9fc' }}>
       <div className="max-w-4xl mx-auto px-4 py-10">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-semibold mb-2" style={{ fontFamily: "'Instrument Serif', serif", color: '#0d1117' }}>
-            Voice Assistant
+            GramVoice AI Assistant
           </h1>
-          <p className="text-sm" style={{ color: '#7a8799' }}>Hindi, English, Tamil, Marathi, Telugu — koi bhi bhasha mein bolo</p>
+          <p className="text-sm" style={{ color: '#7a8799' }}>
+            {voiceLang === 'hi-IN'
+              ? 'हिंदी और इंग्लिश में बोलें — एआई सलाहकार पुरुष आवाज़ (Male Voice) में जवाब देगा'
+              : 'Speak in English or Hindi — AI mentor responds in natural Male Voice'}
+          </p>
         </div>
 
-        <div className="mb-5 flex items-center justify-between px-4 py-2.5 rounded-xl"
-          style={{ background: '#d1fae5', border: '1px solid #a7f3d0' }}>
+        {/* Status Bar */}
+        <div
+          className="mb-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 px-4 py-2.5 rounded-xl"
+          style={{ background: '#d1fae5', border: '1px solid #a7f3d0' }}
+        >
           <div className="flex items-center gap-2 text-xs font-medium" style={{ color: '#065f46' }}>
-            <div className="w-2 h-2 rounded-full bg-green-500" />
-            GramVoice AI Live — Interactive Voice Assistant
+            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+            GramVoice AI Live — Dual Language Male Voice Mentor
           </div>
-          <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full">
-            Online
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-semibold text-blue-700 bg-blue-100 px-2.5 py-0.5 rounded-full">
+              🎙️ Male Voice Active
+            </span>
+            <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full">
+              {voiceLang === 'hi-IN' ? '🇮🇳 हिन्दी मोड' : '🇬🇧 English Mode'}
+            </span>
+          </div>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 rounded-2xl overflow-hidden flex flex-col"
-            style={{ background: '#fff', border: '1px solid #e2e8f0', boxShadow: '0 4px 20px rgba(0,0,0,0.06)', height: '60vh' }}>
+          <div
+            className="lg:col-span-2 rounded-2xl overflow-hidden flex flex-col"
+            style={{ background: '#fff', border: '1px solid #e2e8f0', boxShadow: '0 4px 20px rgba(0,0,0,0.06)', height: '62vh' }}
+          >
             <div className="px-5 py-3.5 flex items-center justify-between" style={{ borderBottom: '1px solid #e2e8f0' }}>
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-xl gradient-btn flex items-center justify-center">
@@ -797,7 +909,9 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
                   <div className="text-sm font-semibold" style={{ color: '#0d1117' }}>GramVoice AI</div>
                   <div className="flex items-center gap-1.5">
                     <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                    <span className="text-xs" style={{ color: '#7a8799' }}>Live · Enterprise Business Assistant</span>
+                    <span className="text-xs" style={{ color: '#7a8799' }}>
+                      {voiceLang === 'hi-IN' ? 'लाइव बिज़नेस मेंटर (पुरुष आवाज़)' : 'Live Business Mentor (Male Voice)'}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -805,7 +919,14 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
                 type="button"
                 onClick={() => {
                   stopSpeaking()
-                  setMessages([{ role: 'ai', text: 'Namaste! Main GramVoice AI hoon. Naya sawaal pucho, Hindi ya English mein. 🎤' }])
+                  setMessages([
+                    {
+                      role: 'ai',
+                      text: voiceLang === 'hi-IN'
+                        ? 'नमस्ते! मैं ग्रामवॉइस एआई हूँ। नया सवाल पूछें, हिंदी या इंग्लिश में। 🎤'
+                        : 'Hello! I am GramVoice AI. Ask your business question in English or Hindi. 🎤'
+                    }
+                  ])
                 }}
                 className="text-xs text-gray-500 hover:text-red-600 px-2.5 py-1.5 rounded-lg hover:bg-red-50 transition-all font-medium cursor-pointer"
                 title="Reset conversation"
@@ -817,13 +938,15 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
             <div ref={chatRef} className="flex-1 overflow-y-auto p-5 flex flex-col gap-4">
               {messages.map((m, i) => (
                 <div key={i} className={`flex flex-col ${m.role === 'user' ? 'items-end' : 'items-start'}`}>
-                  <div className="max-w-[85%] px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap"
+                  <div
+                    className="max-w-[85%] px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap"
                     style={{
                       background: m.role === 'user' ? 'linear-gradient(135deg, #1a6fff, #0ea5e9)' : '#f7f9fc',
                       color: m.role === 'user' ? '#fff' : '#3d4755',
                       borderRadius: m.role === 'user' ? '20px 20px 6px 20px' : '20px 20px 20px 6px',
                       border: m.role === 'ai' ? '1px solid #e2e8f0' : 'none',
-                    }}>
+                    }}
+                  >
                     {m.text}
                   </div>
                   {m.role === 'ai' && (
@@ -840,7 +963,7 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
                         className="text-[11px] font-medium text-blue-700 bg-blue-50/90 hover:bg-blue-100 border border-blue-200/80 px-2.5 py-1 rounded-lg flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
                       >
                         <VolumeIcon size={12} className={state === 'speaking' ? 'text-red-500' : 'text-blue-600'} />
-                        <span>{state === 'speaking' ? '⏹️ Rokein (Stop)' : '🔊 Sunein (Listen)'}</span>
+                        <span>{state === 'speaking' ? '⏹️ Rokein (Stop)' : '🔊 Sunein (Male Voice)'}</span>
                       </button>
 
                       <button
@@ -860,8 +983,10 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
               ))}
               {state === 'processing' && (
                 <div className="flex justify-start">
-                  <div className="px-4 py-3 rounded-2xl flex gap-1.5 items-center"
-                    style={{ background: '#f7f9fc', border: '1px solid #e2e8f0' }}>
+                  <div
+                    className="px-4 py-3 rounded-2xl flex gap-1.5 items-center"
+                    style={{ background: '#f7f9fc', border: '1px solid #e2e8f0' }}
+                  >
                     {[0, 1, 2].map(i => (
                       <div key={i} className="dot-bounce w-2 h-2 rounded-full" style={{ background: '#1a6fff' }} />
                     ))}
@@ -876,7 +1001,7 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
                   value={inputText}
                   onChange={e => setInputText(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleTextSend()}
-                  placeholder="Apna sawaal type karo ya mic tap karo..."
+                  placeholder={voiceLang === 'hi-IN' ? 'अपना सवाल टाइप करें या माइक दबाकर बोलें...' : 'Type your question or tap the mic to speak...'}
                   className="flex-1 px-4 py-2.5 rounded-xl text-sm outline-none"
                   style={{ background: '#f7f9fc', border: '1px solid #e2e8f0', color: '#0d1117' }}
                   disabled={state === 'processing'}
@@ -884,7 +1009,7 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
                 <button
                   onClick={handleTextSend}
                   disabled={state === 'processing' || !inputText.trim()}
-                  className="p-2.5 rounded-xl gradient-btn disabled:opacity-40 transition-all hover:scale-105 active:scale-95"
+                  className="p-2.5 rounded-xl gradient-btn disabled:opacity-40 transition-all hover:scale-105 active:scale-95 cursor-pointer"
                 >
                   <ArrowRight size={18} className="text-white" />
                 </button>
@@ -894,36 +1019,42 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
           </div>
 
           <div className="flex flex-col gap-5">
-            <div className="p-6 rounded-2xl flex flex-col items-center gap-6"
-              style={{ background: '#fff', border: '1px solid #e2e8f0', boxShadow: '0 4px 20px rgba(0,0,0,0.06)' }}>
-              
-              {/* Language Selection Pills */}
-              <div className="flex items-center gap-1.5 p-1 rounded-xl bg-gray-100 border border-gray-200">
-                <button
-                  type="button"
-                  onClick={() => setVoiceLang('hi-IN')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                    voiceLang === 'hi-IN'
-                      ? 'bg-white text-blue-600 shadow-sm'
-                      : 'text-gray-500 hover:text-gray-800'
-                  }`}
-                >
-                  🇮🇳 हिन्दी
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setVoiceLang('en-IN')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                    voiceLang === 'en-IN'
-                      ? 'bg-white text-blue-600 shadow-sm'
-                      : 'text-gray-500 hover:text-gray-800'
-                  }`}
-                >
-                  🇬🇧 English / Hinglish
-                </button>
+            <div
+              className="p-6 rounded-2xl flex flex-col items-center gap-5"
+              style={{ background: '#fff', border: '1px solid #e2e8f0', boxShadow: '0 4px 20px rgba(0,0,0,0.06)' }}
+            >
+              {/* Language Selection Switch */}
+              <div className="w-full">
+                <div className="text-xs font-semibold text-gray-500 mb-2 text-center uppercase tracking-wider">
+                  Select Speaking Language
+                </div>
+                <div className="flex items-center gap-1.5 p-1 rounded-xl bg-gray-100 border border-gray-200 w-full">
+                  <button
+                    type="button"
+                    onClick={() => handleLanguageChange('hi-IN')}
+                    className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                      voiceLang === 'hi-IN'
+                        ? 'bg-white text-blue-600 shadow-sm border border-blue-100'
+                        : 'text-gray-500 hover:text-gray-800'
+                    }`}
+                  >
+                    🇮🇳 हिन्दी (Hindi)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleLanguageChange('en-IN')}
+                    className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                      voiceLang === 'en-IN'
+                        ? 'bg-white text-blue-600 shadow-sm border border-blue-100'
+                        : 'text-gray-500 hover:text-gray-800'
+                    }`}
+                  >
+                    🇬🇧 English
+                  </button>
+                </div>
               </div>
 
-              <div className="text-sm font-medium" style={{ color: stateColor }}>{stateLabel}</div>
+              <div className="text-sm font-semibold" style={{ color: stateColor }}>{stateLabel}</div>
 
               <div className="relative flex items-center justify-center">
                 {(state === 'listening' || state === 'speaking') && (
@@ -933,14 +1064,16 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
                     <div className="mic-ring-3 absolute w-24 h-24 rounded-full border-2" style={{ borderColor: stateColor + '20' }} />
                   </>
                 )}
-                <button onClick={handleMicClick}
-                  className={`w-20 h-20 rounded-full flex items-center justify-center text-white transition-all ${state !== 'idle' ? 'mic-pulse' : 'hover:scale-105'}`}
+                <button
+                  onClick={handleMicClick}
+                  className={`w-20 h-20 rounded-full flex items-center justify-center text-white transition-all cursor-pointer ${state !== 'idle' ? 'mic-pulse' : 'hover:scale-105'}`}
                   style={{
                     background: `linear-gradient(135deg, ${stateColor}, ${stateColor}cc)`,
                     boxShadow: `0 8px 24px ${stateColor}40`,
-                  }}>
+                  }}
+                >
                   {state === 'processing'
-                    ? <div className="flex gap-1">{[0,1,2].map(i => <div key={i} className="dot-bounce w-1.5 h-1.5 rounded-full bg-white" />)}</div>
+                    ? <div className="flex gap-1">{[0, 1, 2].map(i => <div key={i} className="dot-bounce w-1.5 h-1.5 rounded-full bg-white" />)}</div>
                     : <MicIcon size={30} />}
                 </button>
               </div>
@@ -953,19 +1086,19 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
                 </div>
               )}
 
-              <div className="text-xs text-center max-w-[220px]" style={{ color: '#7a8799' }}>
-                {state === 'idle' ? 'Hindi ya English mein boleke mic tap karein' :
-                  state === 'listening' ? '🟢 Bolte rahiye... Bolna rukte hi auto-submit ho jayega ya Send tap karein' :
-                  state === 'processing' ? '⚡ GramVoice AI soch raha hai...' : '🔊 AI bol raha hai...'}
+              <div className="text-xs text-center max-w-[240px] leading-relaxed" style={{ color: '#7a8799' }}>
+                {state === 'idle' ? (voiceLang === 'hi-IN' ? 'माइक टैप करें और हिंदी में अपना बिज़नेस सवाल पूछें' : 'Tap mic and ask your business query in English') :
+                  state === 'listening' ? '🟢 बोलते रहिए... बोलना रुकते ही ऑटो-सबमिट हो जाएगा या नीचे Send टैप करें' :
+                  state === 'processing' ? '⚡ ग्रामवॉइस एआई जवाब तैयार कर रहा है...' : '🔊 पुरुष सलाहकार (Male Voice) में जवाब सुनाया जा रहा है...'}
               </div>
 
               {state === 'listening' && (
                 <button
                   type="button"
                   onClick={() => submitVoiceQuery()}
-                  className="text-xs px-4 py-2 rounded-xl bg-blue-600 text-white font-semibold shadow-md hover:bg-blue-700 transition-all flex items-center gap-1.5"
+                  className="text-xs px-4 py-2 rounded-xl bg-blue-600 text-white font-semibold shadow-md hover:bg-blue-700 transition-all flex items-center gap-1.5 cursor-pointer"
                 >
-                  ✓ Bolna ho gaya? Abhi Send Karein
+                  ✓ बोल लिया? अभी Send करें
                 </button>
               )}
 
@@ -975,20 +1108,28 @@ type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking'
                   onClick={stopSpeaking}
                   className="text-xs px-4 py-2 rounded-xl border-2 font-semibold text-red-600 border-red-300 bg-red-50 hover:bg-red-100 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm animate-pulse"
                 >
-                  ⏹️ Awaaz Rokein (Stop Audio)
+                  ⏹️ आवाज़ रोकें (Stop Audio)
                 </button>
               )}
             </div>
 
             <div className="p-4 rounded-2xl" style={{ background: '#fff', border: '1px solid #e2e8f0' }}>
-              <div className="text-xs font-semibold mb-3" style={{ color: '#7a8799' }}>QUICK QUESTIONS</div>
+              <div className="text-xs font-semibold mb-3 flex items-center justify-between" style={{ color: '#7a8799' }}>
+                <span>QUICK QUESTIONS ({voiceLang === 'hi-IN' ? 'हिन्दी' : 'English'})</span>
+              </div>
               <div className="flex flex-col gap-2">
-                {suggestions.map(s => (
-                  <button key={s}
-                    onClick={() => { setMessages(prev => [...prev, { role: 'user', text: s }]); scrollToBottom(); callGemini(s) }}
+                {activeSuggestions.map(s => (
+                  <button
+                    key={s}
+                    onClick={() => {
+                      setMessages(prev => [...prev, { role: 'user', text: s }])
+                      scrollToBottom()
+                      callGemini(s)
+                    }}
                     disabled={state !== 'idle'}
-                    className="text-left px-3 py-2.5 rounded-xl text-xs font-medium transition-all hover:bg-blue-50 disabled:opacity-40"
-                    style={{ color: '#3d4755', border: '1px solid #e2e8f0' }}>
+                    className="text-left px-3 py-2.5 rounded-xl text-xs font-medium transition-all hover:bg-blue-50 disabled:opacity-40 cursor-pointer"
+                    style={{ color: '#3d4755', border: '1px solid #e2e8f0' }}
+                  >
                     {s}
                   </button>
                 ))}
