@@ -3,6 +3,7 @@ import {
   saveVoiceChat,
   getVoiceHistory,
   createMentorBooking,
+  cancelMentorBooking,
   getMentorBookings,
   toggleSaveScheme,
   getSavedSchemes,
@@ -1959,8 +1960,9 @@ function MentorPage({ navigate }: { navigate: (p: Page) => void }) {
       return
     }
     setIsSubmitting(true)
+    let createdRecordId = ''
     if (bookingMentor) {
-      await createMentorBooking({
+      const res = await createMentorBooking({
         mentor_name: bookingMentor.name,
         user_name: userName.trim(),
         phone_number: phoneNumber.trim(),
@@ -1968,20 +1970,28 @@ function MentorPage({ navigate }: { navigate: (p: Page) => void }) {
         booking_date: new Date(Date.now() + 86400000).toISOString().split('T')[0],
         time_slot: selectedDate,
         status: 'Confirmed'
-      }).catch(() => {})
+      }).catch(() => ({}))
+      createdRecordId = (res as any)?.data?.[0]?.id || ''
     }
     setIsSubmitting(false)
     setBookedSuccess({
+      bookingId: createdRecordId,
       mentor: bookingMentor?.name,
       user: userName,
       phone: phoneNumber,
       slot: selectedDate,
-      topic: topic
+      topic: topic,
+      date: new Date(Date.now() + 86400000).toISOString().split('T')[0]
     })
-    setTimeout(() => {
+  }
+
+  const handleCancelBookingFromSuccess = async () => {
+    if (bookedSuccess) {
+      await cancelMentorBooking(bookedSuccess.bookingId, bookedSuccess.mentor, bookedSuccess.date)
       setBookedSuccess(null)
       setBookingMentor(null)
-    }, 4500)
+      alert(`Session with ${bookedSuccess.mentor} has been cancelled.`)
+    }
   }
 
   const handleAIChatWithMentor = (m: any) => {
@@ -2118,12 +2128,20 @@ function MentorPage({ navigate }: { navigate: (p: Page) => void }) {
                   <div><strong>📅 Time Slot:</strong> {bookedSuccess.slot}</div>
                   <div><strong>💡 Topic:</strong> {bookedSuccess.topic}</div>
                 </div>
-                <button
-                  onClick={() => { setBookedSuccess(null); setBookingMentor(null); navigate('dashboard') }}
-                  className="w-full py-2.5 rounded-xl text-xs font-semibold text-white gradient-btn cursor-pointer"
-                >
-                  View in Dashboard
-                </button>
+                <div className="space-y-2">
+                  <button
+                    onClick={() => { setBookedSuccess(null); setBookingMentor(null); navigate('dashboard') }}
+                    className="w-full py-2.5 rounded-xl text-xs font-semibold text-white gradient-btn cursor-pointer hover:scale-102 transition-all shadow-md"
+                  >
+                    View in Dashboard
+                  </button>
+                  <button
+                    onClick={handleCancelBookingFromSuccess}
+                    className="w-full py-2.5 rounded-xl text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 cursor-pointer transition-all flex items-center justify-center gap-1.5"
+                  >
+                    ✕ Cancel This Booking
+                  </button>
+                </div>
               </div>
             ) : (
               <>
@@ -2244,6 +2262,13 @@ function DashboardPage({ navigate }: { navigate: (p: Page) => void }) {
   const handleRemoveScheme = async (schemeId: string, schemeName: string) => {
     await toggleSaveScheme(schemeId, schemeName, '')
     loadData()
+  }
+
+  const handleCancelBooking = async (b: MentorBookingRecord) => {
+    if (window.confirm(`Kya aap "${b.mentor_name}" ke sath session cancel karna chahte hain?`)) {
+      await cancelMentorBooking(b.id, b.mentor_name, b.booking_date)
+      loadData()
+    }
   }
 
   const handleOpenSchemeVoice = (schemeName: string) => {
@@ -2402,15 +2427,26 @@ function DashboardPage({ navigate }: { navigate: (p: Page) => void }) {
                 </div>
                 <div className="space-y-2.5">
                   {dbBookings.map((b, idx) => (
-                    <div key={idx} className="p-3.5 bg-white rounded-xl border border-emerald-100 flex items-center justify-between">
-                      <div>
+                    <div key={idx} className="p-3.5 bg-white rounded-xl border border-emerald-100 flex items-center justify-between gap-3">
+                      <div className="flex-1 min-w-0">
                         <div className="font-bold text-xs text-gray-900">{b.mentor_name}</div>
                         <div className="text-[11px] text-gray-600 font-medium">{b.time_slot}</div>
-                        <div className="text-[11px] text-gray-500">Topic: {b.business_type} · User: {b.user_name}</div>
+                        <div className="text-[11px] text-gray-500 truncate">Topic: {b.business_type} · User: {b.user_name}</div>
                       </div>
-                      <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800">
-                        {b.status || 'Confirmed'}
-                      </span>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${b.status === 'Cancelled' ? 'bg-red-100 text-red-700 border border-red-200' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'}`}>
+                          {b.status || 'Confirmed'}
+                        </span>
+                        {b.status !== 'Cancelled' && (
+                          <button
+                            onClick={() => handleCancelBooking(b)}
+                            className="px-2.5 py-1 rounded-lg text-[11px] font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 transition-all cursor-pointer"
+                            title="Cancel Session"
+                          >
+                            ✕ Cancel
+                          </button>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>

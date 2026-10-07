@@ -141,6 +141,37 @@ export async function createMentorBooking(booking: MentorBookingRecord) {
   }
 }
 
+export async function cancelMentorBooking(bookingId?: string, mentorName?: string, bookingDate?: string) {
+  try {
+    const local: MentorBookingRecord[] = JSON.parse(localStorage.getItem('gv_mentor_bookings') || '[]')
+    const updated = local.map(b => {
+      if ((bookingId && b.id === bookingId) || (mentorName && b.mentor_name === mentorName)) {
+        return { ...b, status: 'Cancelled' }
+      }
+      return b
+    })
+    localStorage.setItem('gv_mentor_bookings', JSON.stringify(updated))
+  } catch {}
+
+  if (!supabase) return { success: true }
+
+  try {
+    let query = supabase.from('mentor_bookings').update({ status: 'Cancelled' })
+    if (bookingId && !bookingId.startsWith('book_') && !bookingId.startsWith('local_')) {
+      query = query.eq('id', bookingId)
+    } else if (mentorName) {
+      query = query.eq('mentor_name', mentorName)
+    }
+
+    const { data, error } = await query.select()
+    if (error) console.warn('Supabase cancel booking error:', error.message)
+    return { success: true, data }
+  } catch (err) {
+    console.warn('Supabase cancel booking exception:', err)
+    return { success: true }
+  }
+}
+
 export async function getMentorBookings(): Promise<MentorBookingRecord[]> {
   if (supabase) {
     try {
