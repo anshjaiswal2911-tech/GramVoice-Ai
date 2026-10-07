@@ -143,6 +143,15 @@ export async function createMentorBooking(booking: MentorBookingRecord) {
 
 export async function cancelMentorBooking(bookingId?: string, mentorName?: string, bookingDate?: string) {
   try {
+    const cancelledList: string[] = JSON.parse(localStorage.getItem('gv_cancelled_booking_ids') || '[]')
+    if (bookingId && !cancelledList.includes(bookingId)) {
+      cancelledList.push(bookingId)
+    }
+    if (mentorName && !cancelledList.includes(mentorName)) {
+      cancelledList.push(mentorName)
+    }
+    localStorage.setItem('gv_cancelled_booking_ids', JSON.stringify(cancelledList))
+
     const local: MentorBookingRecord[] = JSON.parse(localStorage.getItem('gv_mentor_bookings') || '[]')
     const updated = local.map(b => {
       if ((bookingId && b.id === bookingId) || (mentorName && b.mentor_name === mentorName)) {
@@ -163,16 +172,34 @@ export async function cancelMentorBooking(bookingId?: string, mentorName?: strin
       query = query.eq('mentor_name', mentorName)
     }
 
-    const { data, error } = await query.select()
-    if (error) console.warn('Supabase cancel booking error:', error.message)
-    return { success: true, data }
+    await query
   } catch (err) {
     console.warn('Supabase cancel booking exception:', err)
-    return { success: true }
   }
+  return { success: true }
 }
 
 export async function getMentorBookings(): Promise<MentorBookingRecord[]> {
+  const cancelledList: string[] = (() => {
+    try {
+      return JSON.parse(localStorage.getItem('gv_cancelled_booking_ids') || '[]')
+    } catch {
+      return []
+    }
+  })()
+
+  const mergeCancelledStatus = (list: MentorBookingRecord[]) => {
+    return list.map(b => {
+      if (
+        (b.id && cancelledList.includes(b.id)) ||
+        (b.mentor_name && cancelledList.includes(b.mentor_name))
+      ) {
+        return { ...b, status: 'Cancelled' }
+      }
+      return b
+    })
+  }
+
   if (supabase) {
     try {
       const { data, error } = await supabase
@@ -181,7 +208,7 @@ export async function getMentorBookings(): Promise<MentorBookingRecord[]> {
         .order('created_at', { ascending: false })
 
       if (!error && data && data.length > 0) {
-        return data
+        return mergeCancelledStatus(data)
       }
     } catch (err) {
       console.warn('Supabase getMentorBookings error:', err)
@@ -189,7 +216,8 @@ export async function getMentorBookings(): Promise<MentorBookingRecord[]> {
   }
 
   try {
-    return JSON.parse(localStorage.getItem('gv_mentor_bookings') || '[]')
+    const local = JSON.parse(localStorage.getItem('gv_mentor_bookings') || '[]')
+    return mergeCancelledStatus(local)
   } catch {
     return []
   }

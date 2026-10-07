@@ -2266,6 +2266,12 @@ function DashboardPage({ navigate }: { navigate: (p: Page) => void }) {
 
   const handleCancelBooking = async (b: MentorBookingRecord) => {
     if (window.confirm(`Kya aap "${b.mentor_name}" ke sath session cancel karna chahte hain?`)) {
+      setDbBookings(prev => prev.map(item => {
+        if ((b.id && item.id === b.id) || (item.mentor_name === b.mentor_name)) {
+          return { ...item, status: 'Cancelled' }
+        }
+        return item
+      }))
       await cancelMentorBooking(b.id, b.mentor_name, b.booking_date)
       loadData()
     }
