@@ -413,10 +413,19 @@ function VoiceAssistantPage({ navigate }: { navigate: (page: Page) => void }) {
     }
   }, [])
 
-  // ── Male Voice Selector & Tuner Helper ──────────────────────────────────────
-  const getBestMaleVoice = (voices: SpeechSynthesisVoice[], isHindi: boolean) => {
-    const femaleExclude = [
-      'lekha', 'neerja', 'kalpana', 'sangeeta', 'heera', 'zira', 'samantha',
+  // ── Voice Selector & Speech Synthesis Engine ────────────────────────────────
+  const getBestMaleVoice = (voices: SpeechSynthesisVoice[], isHindi: boolean): SpeechSynthesisVoice | null => {
+    if (!voices || voices.length === 0) return null
+
+    const maleKeywords = [
+      'hemant', 'madhav', 'neel', 'rishi', 'ravi', 'prabhat', 'david', 'mark',
+      'alex', 'guy', 'daniel', 'george', 'arthur', 'oliver', 'fred', 'tom',
+      'male', 'man', 'boy', 'deep', 'tarun', 'hi-in-x-hie', 'hi-in-x-hic',
+      'en-in-x-ene', 'en-in-x-end', 'en-us-x-sfg', 'en-us-x-iob'
+    ]
+
+    const femaleKeywords = [
+      'neerja', 'kalpana', 'sangeeta', 'heera', 'zira', 'samantha',
       'karen', 'victoria', 'veena', 'aditi', 'swara', 'priya', 'pooja',
       'female', 'woman', 'girl', 'catherine', 'helena', 'moira', 'tessa', 'fiona',
       'hazel', 'susan', 'allison', 'ava', 'kate', 'serena', 'agnes', 'kathy', 'vicki',
@@ -425,63 +434,68 @@ function VoiceAssistantPage({ navigate }: { navigate: (page: Page) => void }) {
       'alva', 'klara', 'monica', 'amira', 'nora', 'sara', 'damayanti', 'yuri'
     ]
 
-    const maleKeywords = [
-      'hemant', 'neel', 'rishi', 'ravi', 'madhav', 'prabhat', 'david', 'mark',
-      'alex', 'guy', 'daniel', 'george', 'arthur', 'oliver', 'fred', 'tom',
-      'male', 'man', 'boy', 'deep', 'tarun', 'hi-in-x-hie', 'hi-in-x-hic',
-      'en-in-x-ene', 'en-in-x-end', 'en-us-x-sfg', 'en-us-x-iob'
-    ]
-
     if (isHindi) {
-      // 1. Direct Male Hindi Voice matches
-      const maleHindi = voices.find(v =>
-        (v.lang.startsWith('hi') || v.name.toLowerCase().includes('hindi')) &&
-        maleKeywords.some(m => v.name.toLowerCase().includes(m))
-      )
-      if (maleHindi) return maleHindi
+      // 1. Filter strictly for Hindi-capable voices (hi, hi-IN, hi_IN, Hindi)
+      const hindiVoices = voices.filter(v => {
+        const lang = (v.lang || '').toLowerCase().replace('_', '-')
+        const name = (v.name || '').toLowerCase()
+        return lang.startsWith('hi') || lang.includes('hi-in') || name.includes('hindi')
+      })
 
-      // 2. Hindi voice that is not in the female exclude list
-      const neutralHindi = voices.find(v =>
-        (v.lang.startsWith('hi') || v.name.toLowerCase().includes('hindi')) &&
-        !femaleExclude.some(f => v.name.toLowerCase().includes(f))
-      )
-      if (neutralHindi) return neutralHindi
+      if (hindiVoices.length > 0) {
+        // Priority 1: Hindi voice with male keyword in name
+        const maleHindi = hindiVoices.find(v => {
+          const n = v.name.toLowerCase()
+          return maleKeywords.some(k => n.includes(k))
+        })
+        if (maleHindi) return maleHindi
 
-      // 3. Indian English male voice (like Rishi/Neel)
-      const indianMale = voices.find(v =>
-        (v.lang.includes('IN') || v.name.toLowerCase().includes('india')) &&
-        maleKeywords.some(m => v.name.toLowerCase().includes(m)) &&
-        !femaleExclude.some(f => v.name.toLowerCase().includes(f))
-      )
+        // Priority 2: Hindi voice that is not explicitly in the female keywords list
+        const nonFemaleHindi = hindiVoices.find(v => {
+          const n = v.name.toLowerCase()
+          return !femaleKeywords.some(f => n.includes(f))
+        })
+        if (nonFemaleHindi) return nonFemaleHindi
+
+        // Priority 3: Any installed Hindi voice (pitch will be adjusted to male frequency)
+        return hindiVoices[0]
+      }
+
+      // If no Hindi voice object found, return null so browser's native hi-IN synthesizer handles it
+      return null
+    } else {
+      // English Voice Selection
+      const englishVoices = voices.filter(v => {
+        const lang = (v.lang || '').toLowerCase()
+        return lang.startsWith('en')
+      })
+
+      // Priority 1: Indian English male voice (Rishi, Ravi, Neel, Prabhat)
+      const indianMale = englishVoices.find(v => {
+        const lang = (v.lang || '').toLowerCase()
+        const name = v.name.toLowerCase()
+        return (lang.includes('in') || name.includes('india')) &&
+          maleKeywords.some(k => name.includes(k)) &&
+          !femaleKeywords.some(f => name.includes(f))
+      })
       if (indianMale) return indianMale
 
-      // 4. Any Hindi voice fallback (pitch will be lowered to masculine tone)
-      return voices.find(v => v.lang.startsWith('hi') || v.name.toLowerCase().includes('hindi'))
-    } else {
-      // 1. Indian English Male
-      const maleIndianEn = voices.find(v =>
-        (v.lang.startsWith('en-IN') || v.name.toLowerCase().includes('india')) &&
-        maleKeywords.some(m => v.name.toLowerCase().includes(m)) &&
-        !femaleExclude.some(f => v.name.toLowerCase().includes(f))
-      )
-      if (maleIndianEn) return maleIndianEn
+      // Priority 2: Global English male voice (David, Alex, Daniel, Arthur, Oliver, George)
+      const globalMale = englishVoices.find(v => {
+        const name = v.name.toLowerCase()
+        return maleKeywords.some(k => name.includes(k)) &&
+          !femaleKeywords.some(f => name.includes(f))
+      })
+      if (globalMale) return globalMale
 
-      // 2. Global Male English Voices
-      const maleGlobalEn = voices.find(v =>
-        v.lang.startsWith('en') &&
-        maleKeywords.some(m => v.name.toLowerCase().includes(m)) &&
-        !femaleExclude.some(f => v.name.toLowerCase().includes(f))
-      )
-      if (maleGlobalEn) return maleGlobalEn
+      // Priority 3: Any non-female English voice
+      const neutralEnglish = englishVoices.find(v => {
+        const name = v.name.toLowerCase()
+        return !femaleKeywords.some(f => name.includes(f))
+      })
+      if (neutralEnglish) return neutralEnglish
 
-      // 3. Non-female English
-      const neutralEn = voices.find(v =>
-        v.lang.startsWith('en') &&
-        !femaleExclude.some(f => v.name.toLowerCase().includes(f))
-      )
-      if (neutralEn) return neutralEn
-
-      return voices.find(v => v.lang.startsWith('en'))
+      return englishVoices[0] || null
     }
   }
 
@@ -495,10 +509,9 @@ function VoiceAssistantPage({ navigate }: { navigate: (page: Page) => void }) {
       window.speechSynthesis.resume()
 
       const hasDevanagari = /[\u0900-\u097F]/.test(rawText)
-      const hindiKeywords = /\b(kaise|kya|kyu|kitna|yojana|sarkari|loan|paise|batao|karein|chahiye|mera|hai|milega|dukan|shuru|rupaye|lakh)\b/i
-      const isHindi = hasDevanagari || (voiceLang === 'hi-IN' && hindiKeywords.test(rawText)) || voiceLang === 'hi-IN'
+      const isHindi = hasDevanagari || voiceLang === 'hi-IN'
 
-      // Comprehensive voice normalization for clear natural pronunciation
+      // Comprehensive speech normalization for fluent Hindi and English pronunciation
       let cleanText = rawText
 
       if (isHindi) {
@@ -508,11 +521,16 @@ function VoiceAssistantPage({ navigate }: { navigate: (page: Page) => void }) {
           .replace(/%/g, ' प्रतिशत ')
           .replace(/&/g, ' और ')
           .replace(/\//g, ' या ')
-          .replace(/\bMSME\b/g, 'एम एस एम ई')
-          .replace(/\bGST\b/g, 'जी एस टी')
-          .replace(/\bPM\b/g, 'पी एम')
-          .replace(/\bFSSAI\b/g, 'एफ एस एस ए आई')
-          .replace(/\bPMEGP\b/g, 'पी एम ई जी पी')
+          .replace(/\bMSME\b/gi, 'एमएसएमई')
+          .replace(/\bGST\b/gi, 'जीएसटी')
+          .replace(/\bPM\b/gi, 'पीएम')
+          .replace(/\bFSSAI\b/gi, 'एफएसएसएआई')
+          .replace(/\bPMEGP\b/gi, 'पीएमईजीपी')
+          .replace(/\bCSC\b/gi, 'सीएससी')
+          .replace(/\bOTP\b/gi, 'ओटीपी')
+          .replace(/\bAI\b/gi, 'एआई')
+          .replace(/\bKYC\b/gi, 'केवाईसी')
+          .replace(/\bDPR\b/gi, 'डीपीआर')
       } else {
         cleanText = cleanText
           .replace(/₹\s*([0-9,]+)/g, '$1 Rupees ')
@@ -533,7 +551,7 @@ function VoiceAssistantPage({ navigate }: { navigate: (page: Page) => void }) {
 
       if (!cleanText) return
 
-      // Delay by 80ms for mobile/desktop audio hardware transition
+      // Delay by 60ms to let audio device warm up
       setTimeout(() => {
         if (isSpeakingCancelledRef.current) return
 
@@ -542,17 +560,9 @@ function VoiceAssistantPage({ navigate }: { navigate: (page: Page) => void }) {
           const voices = window.speechSynthesis.getVoices() || []
           const selectedVoice = getBestMaleVoice(voices, isHindi)
 
-          // Check if the selected voice is a female fallback
-          const femaleList = [
-            'lekha', 'neerja', 'kalpana', 'sangeeta', 'heera', 'zira', 'samantha',
-            'karen', 'victoria', 'veena', 'aditi', 'swara', 'priya', 'pooja',
-            'female', 'woman', 'girl', 'catherine', 'helena', 'moira', 'tessa', 'fiona'
-          ]
-          const voiceName = selectedVoice?.name.toLowerCase() || ''
-          const isFallbackFemale = femaleList.some(f => voiceName.includes(f))
-
-          // Split into sentences for smooth, stutter-free streaming playback
-          const sentences = cleanText.match(/[^।?!.\n]+[।?!.\n]*/g)?.map(s => s.trim()).filter(Boolean) || [cleanText]
+          // Split sentences smoothly without breaking decimal numbers or currencies
+          const rawSentences = cleanText.split(/(?<=[।!?\n])\s+/).map(s => s.trim()).filter(Boolean)
+          const sentences = rawSentences.length > 0 ? rawSentences : [cleanText]
 
           let currentIndex = 0
 
@@ -572,14 +582,14 @@ function VoiceAssistantPage({ navigate }: { navigate: (page: Page) => void }) {
             if (isHindi) {
               utter.lang = 'hi-IN'
               if (selectedVoice) utter.voice = selectedVoice
-              // If voice is a female fallback on MacOS/iOS, drop pitch to 0.70 to shift formant to deep male tone
-              utter.pitch = isFallbackFemale ? 0.70 : 0.82
+              // Natural, deep, confident male Hindi tone
+              utter.pitch = 0.85
               utter.rate = 0.94
             } else {
               utter.lang = 'en-IN'
               if (selectedVoice) utter.voice = selectedVoice
-              utter.pitch = isFallbackFemale ? 0.72 : 0.85
-              utter.rate = 0.96
+              utter.pitch = 0.88
+              utter.rate = 0.98
             }
 
             utter.volume = 1.0
@@ -591,18 +601,21 @@ function VoiceAssistantPage({ navigate }: { navigate: (page: Page) => void }) {
               }
               setState('speaking')
             }
+
             utter.onend = () => {
               if (!isSpeakingCancelledRef.current) {
                 playNextSentence()
               }
             }
+
             utter.onerror = (e) => {
               if (!isSpeakingCancelledRef.current) {
-                console.warn('Utterance error:', e)
+                console.warn('Utterance playback notice:', e)
                 playNextSentence()
               }
             }
 
+            window.speechSynthesis.resume()
             window.speechSynthesis.speak(utter)
           }
 
@@ -611,7 +624,7 @@ function VoiceAssistantPage({ navigate }: { navigate: (page: Page) => void }) {
           console.warn('SpeechSynthesis playback error:', err)
           setState('idle')
         }
-      }, 80)
+      }, 60)
     } catch (err) {
       console.warn('SpeechSynthesis init failed:', err)
       setState('idle')
