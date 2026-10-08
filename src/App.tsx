@@ -759,8 +759,30 @@ function VoiceAssistantPage({ navigate }: { navigate: (page: Page) => void }) {
 
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
     if (!SpeechRecognition) {
-      setKeyError('Voice input is not supported in this browser. Please type your question.')
+      setKeyError(
+        voiceLang === 'hi-IN'
+          ? 'इस ऐप/ब्राउज़र में वॉयस इनपुट सपोर्ट नहीं है। कृपया टाइप करके सवाल पूछें या Chrome में खोलें।'
+          : 'Voice input not supported in this browser. Please type or open in Chrome.'
+      )
       return
+    }
+
+    // Explicitly request OS microphone permission for Android APK / WebView
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+        stream.getTracks().forEach(t => t.stop())
+      } catch (err: any) {
+        console.warn('Microphone permission request:', err)
+        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+          setKeyError(
+            voiceLang === 'hi-IN'
+              ? 'माइक परमिशन बंद है। Phone Settings > Apps > GramVoice AI > Permissions में जाकर Microphone अलाउ करें।'
+              : 'Microphone permission blocked. Please enable Microphone in Phone Settings > Apps > GramVoice AI > Permissions.'
+          )
+          return
+        }
+      }
     }
 
     // Warm up and prime audio output on touch gesture for mobile browsers
@@ -822,12 +844,18 @@ function VoiceAssistantPage({ navigate }: { navigate: (page: Page) => void }) {
       }
 
       setState('idle')
-      if (e.error === 'not-allowed') {
-        setKeyError(voiceLang === 'hi-IN' ? 'माइक परमिशन ब्लॉक है। ब्राउज़र सेटिंग्स में जाकर माइक्रोफोन अलाउ करें।' : 'Microphone permission blocked. Please allow mic in browser settings.')
+      if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+        setKeyError(
+          voiceLang === 'hi-IN'
+            ? 'माइक परमिशन बंद है। Phone Settings > Apps > GramVoice AI > Permissions में Microphone अलाउ करें।'
+            : 'Microphone blocked. Please enable Microphone in Phone Settings > Apps > GramVoice AI > Permissions.'
+        )
       } else if (e.error === 'no-speech') {
         setKeyError(voiceLang === 'hi-IN' ? 'आवाज़ डिटेक्ट नहीं हुई। कृपया दोबारा माइक टैप करके बोलें।' : 'No speech detected. Please tap mic and speak again.')
+      } else if (e.error === 'network') {
+        setKeyError(voiceLang === 'hi-IN' ? 'इंटरनेट कनेक्शन चेक करें या दोबारा बोलें।' : 'Network issue. Please check internet connection.')
       } else {
-        setKeyError(voiceLang === 'hi-IN' ? 'आवाज़ डिटेक्ट करने में दिक्कत आई। कृपया दोबारा बोलें या टाइप करें।' : 'Speech detection issue. Please speak again or type.')
+        setKeyError(voiceLang === 'hi-IN' ? 'आवाज़ डिटेक्ट करने में दिक्कत आई। कृपया दोबारा बोलें या नीचे टाइप करें।' : 'Speech detection issue. Please speak again or type below.')
       }
     }
 
