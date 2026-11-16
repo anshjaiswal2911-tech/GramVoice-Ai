@@ -658,13 +658,22 @@ function VoiceAssistantPage({ navigate }: { navigate: (page: Page) => void }) {
         if (lower.includes('vishwakarma') || lower.includes('विश्वकर्मा') || lower.includes('training') || lower.includes('टूलकिट')) {
           return 'पीएम विश्वकर्मा योजना 18 पारंपरिक कारीगरों जैसे दर्जी, बढ़ई, लोहार और कुम्हार के लिए है। इसमें 5 से 7 दिन की फ्री ट्रेनिंग, 500 रुपये प्रतिदिन का वजीफा, 15,000 रुपये का टूलकिट वाउचर और 5 प्रतिशत ब्याज पर 3 लाख रुपये तक का लोन मिलता है। नजदीकी सीएससी सेंटर पर जाकर बायोमेट्रिक ईकेवाईसी कराएं।'
         }
-        if (lower.includes('5000') || lower.includes('पाँच') || lower.includes('कम पूंजी') || lower.includes('investment') || lower.includes('शुरू') || lower.includes('start') || lower.includes('business') || lower.includes('बिज़नेस') || lower.includes('आईडिया')) {
-          return 'कम बजट में आप घर से टिफिन सर्विस, सीजनल पूजा सामग्री या अगरबत्ती का काम, मोबाइल रिचार्ज व एक्सेसरीज, या गांवों में ताजी सब्जियों और दूध की सप्लाई शुरू कर सकते हैं। शुरुआत में सारा पैसा माल खरीदने में न लगाएं, पहले स्थानीय ग्राहकों की जरूरत समझें और फिर धीरे-धीरे पूंजी बढ़ाएं।'
+        if (lower.includes('5000') || lower.includes('10000') || lower.includes('पाँच') || lower.includes('दस') || lower.includes('कम पूंजी') || lower.includes('investment') || lower.includes('शुरू') || lower.includes('start') || lower.includes('business') || lower.includes('बिज़नेस') || lower.includes('आईडिया') || lower.includes('idea')) {
+          return 'कम बजट में आप घर से टिफिन सर्विस, सीजनल पूजा सामग्री व अगरबत्ती निर्माण, मोबाइल रिचार्ज व डिजिटल सेवा केंद्र, या गांवों में ताजी सब्जियों और दूध की सप्लाई शुरू कर सकते हैं। शुरुआत में सारा पैसा माल खरीदने में न लगाएं, पहले स्थानीय ग्राहकों की जरूरत समझें और फिर धीरे-धीरे पूंजी बढ़ाएं।'
+        }
+        if (lower.includes('dairy') || lower.includes('डेयरी') || lower.includes('दूध') || lower.includes('cow') || lower.includes('गाय') || lower.includes('भैंस')) {
+          return 'डेयरी फार्मिंग शुरू करने के लिए राष्ट्रीय गोकुल मिशन और नाबार्ड की डेयरी उद्यमिता योजना के तहत 25 से 33 प्रतिशत तक की सब्सिडी उपलब्ध है। 2 से 4 अच्छी नस्ल की गाय या भैंस से शुरुआत करें, स्थानीय दूध कलेक्शन सेंटर या कोऑपरेटिव से करार करें, और पशु टीकाकरण का ध्यान रखें।'
+        }
+        if (lower.includes('poultry') || lower.includes('मुर्गी') || lower.includes('बकरी') || lower.includes('goat')) {
+          return 'बकरी पालन और देसी मुर्गी पालन कम लागत में सबसे ज्यादा मुनाफा देने वाले ग्रामीण व्यवसाय हैं। नाबार्ड और राज्य पशुपालन विभाग शेड बनाने और पशु खरीदने के लिए 50 प्रतिशत तक सब्सिडी देते हैं। नजदीकी ब्लॉक पशुपालन अधिकारी से मिलकर आवेदन फॉर्म प्राप्त करें।'
+        }
+        if (lower.includes('market') || lower.includes('ग्राहक') || lower.includes('बिक्री') || lower.includes('sell') || lower.includes('whatsapp')) {
+          return 'अपने ग्रामीण उत्पाद बेचने के लिए सबसे पहले व्हाट्सएप बिजनेस प्रोफाइल बनाएं और अपने नजदीकी 50-100 परिवारों का ग्रुप बनाएं। स्थानीय हाट-बाजार, ग्राम प्रधान और किराना स्टोर से संपर्क करें। हमेशा सही तौल, वाजिब दाम और अच्छी सर्विस दें ताकि ग्राहक बार-बार आपसे ही खरीदारी करें।'
         }
         if (lower.includes('udyam') || lower.includes('उद्यम') || lower.includes('msme') || lower.includes('रजिस्ट्रेशन') || lower.includes('certificate')) {
           return 'एमएसएमई उद्यम रजिस्ट्रेशन भारत सरकार के आधिकारिक उद्यम पोर्टल पर बिल्कुल मुफ्त होता है। इसके लिए केवल आधार कार्ड, पैन कार्ड और बैंक खाता नंबर की जरूरत होती है। रजिस्ट्रेशन के बाद आपको सरकारी योजनाओं, सब्सिडी और बैंकों से कम ब्याज पर लोन मिलने में प्राथमिकता मिलती है।'
         }
-        return 'नमस्ते! मैं आपका ग्रामवॉइस एआई बिजनेस मेंटर हूँ। ग्रामीण उद्योग, सरकारी सब्सिडी, पीएम मुद्रा लोन या बिजनेस शुरू करने की पूरी गाइडेंस के लिए आप मुझसे पूछ सकते हैं। आप अपने नजदीकी बैंक में जाकर या सरकारी पोर्टल पर आसानी से आवेदन कर सकते हैं।'
+        return 'नमस्ते! मैं आपका ग्रामवॉइस एआई बिजनेस मेंटर हूँ। ग्रामीण उद्योग, सरकारी सब्सिडी, पीएम मुद्रा लोन, डेयरी फार्मिंग या बिजनेस शुरू करने की पूरी गाइडेंस के लिए आप मुझसे पूछ सकते हैं। आप अपने नजदीकी बैंक में जाकर या सरकारी पोर्टल पर आसानी से आवेदन कर सकते हैं।'
       } else {
         if (lower.includes('mudra') || lower.includes('loan') || lower.includes('finance')) {
           return 'Under the PM Mudra Yojana, you can get collateral-free business loans up to 10 Lakh Rupees. It has three tiers: Shishu up to 50,000 Rupees, Kishore up to 5 Lakh Rupees, and Tarun up to 10 Lakh Rupees. You can apply at any public sector bank or via the official Udyamimitra portal with your Aadhaar and PAN card.'
@@ -675,8 +684,17 @@ function VoiceAssistantPage({ navigate }: { navigate: (page: Page) => void }) {
         if (lower.includes('vishwakarma') || lower.includes('artisan') || lower.includes('tool')) {
           return 'The PM Vishwakarma Yojana supports 18 traditional trades with free skill training, a 500 Rupees daily stipend, a 15,000 Rupees toolkit voucher, and collateral-free enterprise loans up to 3 Lakh Rupees at a concessional 5 percent interest rate. You can register at any nearby CSC center.'
         }
-        if (lower.includes('start') || lower.includes('idea') || lower.includes('investment') || lower.includes('first business') || lower.includes('village')) {
+        if (lower.includes('5000') || lower.includes('10000') || lower.includes('start') || lower.includes('idea') || lower.includes('investment') || lower.includes('first business') || lower.includes('village')) {
           return 'Great low-investment rural businesses include mobile phone accessories and digital services, home-cooked food tiffin delivery, organic spices and flour packaging, or farm-to-table produce aggregation. Begin by identifying what your local community needs daily, keep operating costs minimal, and register for a free MSME Udyam certificate.'
+        }
+        if (lower.includes('dairy') || lower.includes('milk') || lower.includes('cattle')) {
+          return 'For starting a dairy farm, NABARD and National Gokul Mission provide 25 to 33 percent capital subsidies. Start with 2 to 4 high-yield cows or buffaloes, partner with local dairy cooperatives, and maintain proper cattle vaccination and feed records.'
+        }
+        if (lower.includes('poultry') || lower.includes('goat') || lower.includes('farming')) {
+          return 'Goat farming and indigenous poultry rearing offer high profit margins with low initial capital. State animal husbandry departments provide up to 50 percent subsidy for shed construction and livestock procurement. Contact your local block development office to register.'
+        }
+        if (lower.includes('market') || lower.includes('customer') || lower.includes('sell') || lower.includes('whatsapp')) {
+          return 'To boost local sales, setup a free WhatsApp Business account with your product catalogue. Connect directly with residential societies, local grocery shops, and weekly village haats. Ensuring honest pricing and prompt doorstep delivery builds long-term customer loyalty.'
         }
         if (lower.includes('udyam') || lower.includes('msme') || lower.includes('register') || lower.includes('gst')) {
           return 'MSME Udyam Registration is 100 percent free on the official government udyamregistration.gov.in portal. You only require your Aadhaar number, PAN card, and bank account details. This certificate unlocks government loan subsidies and tax exemptions.'
