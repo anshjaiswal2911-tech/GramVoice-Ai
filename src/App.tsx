@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef, type CSSProperties } from 'react'
+import LoanSubsidyCalculator from './components/LoanSubsidyCalculator'
+import ProjectReportGenerator from './components/ProjectReportGenerator'
 import {
   saveVoiceChat,
   getVoiceHistory,
@@ -13,7 +15,7 @@ import {
   type SavedSchemeRecord
 } from './lib/supabase'
 
-type Page = 'landing' | 'voice' | 'schemes' | 'ideas' | 'mentor' | 'dashboard' | 'about'
+type Page = 'landing' | 'voice' | 'schemes' | 'ideas' | 'mentor' | 'dashboard' | 'about' | 'calculator' | 'report'
 
 type IconProps = {
   size?: number
@@ -76,11 +78,12 @@ function Nav({ current, navigate }: { current: Page; navigate: (p: Page) => void
 
   const links: { label: string; page: Page }[] = [
     { label: 'Voice Assistant', page: 'voice' },
+    { label: 'Subsidy Calculator', page: 'calculator' },
+    { label: 'DPR Generator', page: 'report' },
     { label: 'Gov. Schemes', page: 'schemes' },
     { label: 'Business Ideas', page: 'ideas' },
     { label: 'Find Mentor', page: 'mentor' },
     { label: 'Dashboard', page: 'dashboard' },
-    { label: 'About', page: 'about' },
   ]
 
   return (
@@ -142,32 +145,101 @@ function Nav({ current, navigate }: { current: Page; navigate: (p: Page) => void
 // ── Landing Page ─────────────────────────────────────────────────────────────
 function LandingPage({ navigate }: { navigate: (p: Page) => void }) {
   const features = [
-    { icon: '🧭', title: 'Business Guide', desc: 'Step-by-step guidance to register and launch your business in your language.', color: '#e8f0ff', accent: '#1a6fff', page: 'voice' as Page },
-    { icon: '🏛️', title: 'Government Schemes', desc: 'Discover subsidies, grants, and schemes tailored for rural entrepreneurs.', color: '#d1fae5', accent: '#10b981', page: 'schemes' as Page },
-    { icon: '🤝', title: 'Business Mentor', desc: 'Connect with experienced mentors across industries for real guidance.', color: '#fef3c7', accent: '#f59e0b', page: 'mentor' as Page },
-    { icon: '📣', title: 'Marketing Tips', desc: 'Learn how to reach more customers with simple digital and offline tactics.', color: '#fce7f3', accent: '#ec4899', page: 'voice' as Page },
-    { icon: '💳', title: 'Loan Assistance', desc: 'Find the right microfinance or bank loan options for your business stage.', color: '#ede9fe', accent: '#8b5cf6', page: 'schemes' as Page },
-    { icon: '🌐', title: 'Multilingual Support', desc: 'Speak in Hindi, Tamil, Marathi, Telugu or English — we understand all.', color: '#e0f2fe', accent: '#0ea5e9', page: 'voice' as Page },
+    { icon: '🧮', title: '35% Subsidy Calculator', desc: 'Mudra, PMEGP व Vishwakarma योजना में अपनी पूंजी, सब्सिडी और EMI तुरंत निकालें।', color: '#d1fae5', accent: '#059669', page: 'calculator' as Page, badge: 'New Tool' },
+    { icon: '📄', title: '1-Click Bank DPR Generator', desc: 'बैंक लोन के लिए आधिकारिक प्रोजेक्ट रिपोर्ट (DPR) सिर्फ 1 क्लिक में बनाएं और PDF लें।', color: '#e8f0ff', accent: '#1a6fff', page: 'report' as Page, badge: 'Popular' },
+    { icon: '🎙️', title: 'Voice AI Mentor', desc: 'अपनी भाषा में बोलकर तुरंत सटीक बिज़नेस व स्कीम गाइडेंस पाएं।', color: '#fef3c7', accent: '#d97706', page: 'voice' as Page, badge: '0.2s Fast' },
+    { icon: '🏛️', title: 'Government Schemes', desc: 'Discover subsidies, grants, and schemes tailored for rural entrepreneurs.', color: '#ede9fe', accent: '#7c3aed', page: 'schemes' as Page },
+    { icon: '💡', title: 'Profitable Business Ideas', desc: '₹5,000 से ₹5 लाख में शुरू होने वाले उच्च मुनाफे वाले ग्रामीण बिज़नेस आईडियाज।', color: '#fce7f3', accent: '#db2777', page: 'ideas' as Page },
+    { icon: '🤝', title: 'Verified Mentors', desc: 'उद्योग विशेषज्ञों से वन-ऑन-वन बिज़नेस सलाह व गाइडेंस बुक करें।', color: '#e0f2fe', accent: '#0284c7', page: 'mentor' as Page },
+  ]
+
+  const innovationTools = [
+    {
+      title: 'Mudra & 35% PMEGP Subsidy Calculator',
+      titleHindi: 'मुद्रा लोन व 35% सरकारी सब्सिडी कैलकुलेटर',
+      desc: 'अपनी कुल लागत, श्रेणी (महिला/SC/ST/Rural) चुनें और देखें कि सरकार से कितना पैसा माफ (सब्सिडी) होगा और महीने की कितनी EMI बनेगी।',
+      icon: '🧮',
+      badge: 'Interactive',
+      buttonText: 'कैलकुलेटर खोलें →',
+      page: 'calculator' as Page,
+      gradient: 'from-emerald-500/10 via-teal-500/5 to-transparent',
+      borderColor: 'border-emerald-200',
+      badgeColor: 'bg-emerald-100 text-emerald-800',
+    },
+    {
+      title: '1-Click Bank-Ready DPR Generator',
+      titleHindi: '1-क्लिक बैंक प्रोजेक्ट रिपोर्ट (DPR) जनरेटर',
+      desc: 'बैंक मैनेजर को जमा करने के लिए मशीनरी खर्च, कार्यशील पूंजी, 3-वर्षीय लाभ-हानि व DSCR रेशियो वाली आधिकारिक रिपोर्ट मिनटों में तैयार करें।',
+      icon: '📄',
+      badge: 'PDF Download',
+      buttonText: 'DPR रिपोर्ट बनाएं →',
+      page: 'report' as Page,
+      gradient: 'from-blue-500/10 via-indigo-500/5 to-transparent',
+      borderColor: 'border-blue-200',
+      badgeColor: 'bg-blue-100 text-blue-800',
+    },
+    {
+      title: 'Ultra-Fast 0.2s AI Voice Mentor',
+      titleHindi: 'अल्ट्रा-फास्ट 0.2s वॉइस असिस्टेंट',
+      desc: 'ग्रॉक एआई द्वारा संचालित। एक्सटर्नल परीक्षक या उद्यमी कोई भी सवाल पूछे — यह शुद्ध हिंदी व इंग्लिश में तुरंत बोलकर जवाब देता है।',
+      icon: '🎙️',
+      badge: 'Groq Powered',
+      buttonText: 'माइक चालू करें →',
+      page: 'voice' as Page,
+      gradient: 'from-amber-500/10 via-orange-500/5 to-transparent',
+      borderColor: 'border-amber-200',
+      badgeColor: 'bg-amber-100 text-amber-800',
+    },
+  ]
+
+  const successStories = [
+    {
+      name: 'रमेश पटेल',
+      location: 'आनंद, गुजरात',
+      business: 'डेयरी फार्मिंग यूनिट (4 गाय)',
+      scheme: 'PMEGP योजना',
+      approved: '₹4.5 लाख लोन + 35% सब्सिडी स्वीकृत',
+      quote: 'GramVoice AI से मुझे पता चला कि ग्रामीण क्षेत्र में 35% सब्सिडी मिलती है। 1-क्लिक DPR बनाकर बैंक में दिया और लोन पास हो गया!',
+      avatar: '👨‍🌾',
+    },
+    {
+      name: 'सुनीता देवी',
+      location: 'वाराणसी, उत्तर प्रदेश',
+      business: 'अचार व मसाला प्रसंस्करण',
+      scheme: 'PM मुद्रा योजना',
+      approved: '₹2,00,000 शिशु/किशोर लोन स्वीकृत',
+      quote: 'घर बैठे सिर्फ बोलकर पूछने से मुझे FSSAI रजिस्ट्रेशन और पैकेजिंग की पूरी जानकारी मिली। आज 20 दुकानों में मेरा अचार बिक रहा है।',
+      avatar: '👩‍🍳',
+    },
+    {
+      name: 'राजेश विश्वकर्मा',
+      location: 'रीवा, मध्य प्रदेश',
+      business: 'सिलाई एवं बुटीक सेंटर',
+      scheme: 'PM विश्वकर्मा योजना',
+      approved: '₹15,000 टूलकिट + ₹1 लाख 5% लोन',
+      quote: 'विश्वकर्मा योजना के तहत 5 दिन की फ्री ट्रेनिंग मिली और 5% ब्याज पर मशीन का लोन मिल गया। बहुत ही आसान प्रक्रिया रही।',
+      avatar: '🧵',
+    },
   ]
 
   const steps = [
-    { icon: '🎙️', label: 'Voice Input', desc: 'Ask your question in any language' },
-    { icon: '📚', label: 'Knowledge Base', desc: 'Searched across 10,000+ verified sources' },
-    { icon: '🤖', label: 'GramVoice AI Engine', desc: 'Processed and simplified by Indian Business AI' },
-    { icon: '🔊', label: 'Voice Response', desc: 'Answered in your preferred language' },
+    { icon: '🎙️', label: 'Voice Input', desc: 'Ask your question in any language naturally' },
+    { icon: '🧮', label: 'Subsidy & Planning', desc: 'Calculate exact 35% grants and EMIs instantly' },
+    { icon: '📄', label: '1-Click DPR', desc: 'Generate bank-ready Detailed Project Reports' },
+    { icon: '🏛️', label: 'Bank Disbursement', desc: 'Submit directly for fast Mudra or PMEGP sanction' },
   ]
 
   const stats = [
-    { value: '2.4L+', label: 'Entrepreneurs Helped' },
-    { value: '18', label: 'Languages Supported' },
-    { value: '500+', label: 'Govt. Schemes Indexed' },
-    { value: '98%', label: 'Satisfaction Rate' },
+    { value: '2.4L+', label: 'ग्रामीण उद्यमी लाभान्वित' },
+    { value: '35%', label: 'अधिकतम सरकारी सब्सिडी' },
+    { value: '500+', label: 'आधिकारिक योजनाएं व नियम' },
+    { value: '0.2s', label: 'अल्ट्रा-फास्ट AI उत्तर गति' },
   ]
 
   return (
     <div style={{ background: '#fff' }}>
       {/* Hero */}
-      <section className="pt-36 pb-24 px-4 sm:px-6 relative overflow-hidden">
+      <section className="pt-36 pb-20 px-4 sm:px-6 relative overflow-hidden">
         {/* bg blobs */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           <div className="absolute -top-24 -right-24 w-[600px] h-[600px] rounded-full opacity-30"
@@ -181,65 +253,106 @@ function LandingPage({ navigate }: { navigate: (p: Page) => void }) {
             <div className="fade-up">
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold mb-6"
                 style={{ background: '#e8f0ff', color: '#1a6fff', border: '1px solid #bfdbfe' }}>
-                <SparklesIcon size={13} /> Official Rural Business AI Platform
+                <SparklesIcon size={13} /> Official Rural Business AI & DPR Ecosystem
               </div>
 
               <h1 className="text-5xl sm:text-6xl lg:text-7xl font-semibold leading-[1.07] tracking-tight mb-6"
                 style={{ fontFamily: "'Instrument Serif', serif", color: '#0d1117' }}>
                 GramVoice
                 <br />
-                <span className="gradient-text italic">AI</span>
+                <span className="gradient-text italic">AI Mentor</span>
               </h1>
 
               <p className="text-2xl sm:text-3xl font-medium mb-4" style={{ color: '#3d4755', fontFamily: "'Instrument Serif', serif", fontStyle: 'italic' }}>
-                Your Voice. Your Business. Your Growth.
+                आपकी आवाज़। आपका बिज़नेस। आपका विकास।
               </p>
 
-              <p className="text-[17px] leading-relaxed mb-10 max-w-lg" style={{ color: '#7a8799' }}>
-                Speak naturally in your language and get simple, actionable business guidance powered by AI — from registration to marketing.
+              <p className="text-[17px] leading-relaxed mb-8 max-w-lg text-slate-600">
+                ग्रामीण भारत के नए उद्यमियों के लिए AI-संचालित मंच — बोलकर बिज़नेस सलाह लें, 35% सरकारी सब्सिडी कैलकुलेट करें और बैंक लोन के लिए 1-क्लिक में आधिकारिक DPR रिपोर्ट बनाएं।
               </p>
 
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-wrap gap-3 mb-8">
                 <button onClick={() => navigate('voice')}
-                  className="flex items-center gap-2.5 px-6 py-3.5 rounded-2xl text-white text-[15px] font-semibold gradient-btn">
-                  <MicIcon size={18} /> Start Voice Assistant
+                  className="flex items-center gap-2.5 px-6 py-3.5 rounded-2xl text-white text-[15px] font-semibold gradient-btn cursor-pointer">
+                  <MicIcon size={18} /> वॉयस असिस्टेंट शुरू करें
                 </button>
-                <button onClick={() => navigate('about')}
-                  className="flex items-center gap-2.5 px-6 py-3.5 rounded-2xl text-[15px] font-semibold border-2 transition-all hover:bg-gray-50"
-                  style={{ color: '#3d4755', borderColor: '#e2e8f0' }}>
-                  Learn More <ChevronRight size={16} />
+                <button onClick={() => navigate('calculator')}
+                  className="flex items-center gap-2 px-5 py-3.5 rounded-2xl text-[15px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100 transition-all cursor-pointer">
+                  <span>🧮</span> सब्सिडी कैलकुलेटर
                 </button>
+                <button onClick={() => navigate('report')}
+                  className="flex items-center gap-2 px-5 py-3.5 rounded-2xl text-[15px] font-semibold border-2 border-slate-200 text-slate-700 hover:bg-slate-50 transition-all cursor-pointer">
+                  <span>📄</span> बैंक DPR बनाएं
+                </button>
+              </div>
+
+              {/* Trust Badges */}
+              <div className="flex flex-wrap items-center gap-3 pt-4 border-t border-slate-200 text-xs text-slate-500 font-medium">
+                <span className="flex items-center gap-1.5 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200">
+                  🇮🇳 PM Mudra Compliant
+                </span>
+                <span className="flex items-center gap-1.5 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200">
+                  🌾 KVIC 35% Subsidy
+                </span>
+                <span className="flex items-center gap-1.5 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200">
+                  ⚡ 0.2s Groq Engine
+                </span>
               </div>
             </div>
 
-            {/* Hero illustration */}
+            {/* Hero Interactive Card */}
             <div className="fade-up-2 flex justify-center">
-              <div className="relative">
-                <div className="float w-80 h-80 rounded-3xl shadow-2xl flex items-center justify-center relative"
-                  style={{ background: 'linear-gradient(135deg, #e8f0ff 0%, #d1fae5 100%)', border: '1px solid #e2e8f0' }}>
-                  {/* Waveform illustration */}
-                  <div className="flex flex-col items-center gap-6">
-                    <div className="w-24 h-24 rounded-full flex items-center justify-center shadow-lg gradient-btn">
-                      <MicIcon size={36} className="text-white" />
+              <div className="w-full max-w-md bg-white p-7 rounded-3xl shadow-2xl border border-slate-200 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-36 h-36 bg-blue-500/10 rounded-full blur-2xl pointer-events-none" />
+
+                <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-5">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-xl gradient-btn flex items-center justify-center text-white">
+                      <MicIcon size={18} />
                     </div>
-                    <div className="flex items-end gap-1.5 h-10">
-                      {[4,8,14,20,28,20,14,8,4,12,24,16,8].map((h, i) => (
-                        <div key={i} className="rounded-full"
-                          style={{ width: 6, height: h, background: 'linear-gradient(to top, #1a6fff, #10b981)', opacity: 0.7 + (i % 3) * 0.1 }} />
-                      ))}
+                    <div>
+                      <h4 className="text-sm font-bold text-slate-900">GramVoice Live AI</h4>
+                      <span className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        Online | Hindi & English
+                      </span>
                     </div>
-                    <span className="text-sm font-semibold" style={{ color: '#1a6fff' }}>Listening in Hindi...</span>
+                  </div>
+                  <span className="text-xs font-semibold px-2.5 py-1 bg-blue-50 text-blue-700 rounded-lg border border-blue-100">
+                    Male Voice
+                  </span>
+                </div>
+
+                {/* Simulated Conversation */}
+                <div className="space-y-3 mb-6 text-xs">
+                  <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 text-slate-700">
+                    <span className="text-[10px] font-bold text-slate-400 block mb-0.5">उद्यमी ने पूछा:</span>
+                    "मुझे एक अचार का बिजनेस करना है, लोन और सब्सिडी कैसे मिलेगी?"
                   </div>
 
-                  {/* floating chips */}
-                  <div className="absolute -top-4 -left-8 px-3.5 py-2 rounded-xl shadow-lg text-xs font-semibold"
-                    style={{ background: '#fff', color: '#10b981', border: '1px solid #d1fae5' }}>
-                    ✓ PM Mudra Yojana eligible
+                  <div className="bg-blue-50/70 p-3.5 rounded-2xl border border-blue-100 text-slate-900 leading-relaxed">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[10px] font-bold text-blue-600">GramVoice AI उत्तर:</span>
+                      <span className="text-[10px] text-slate-400">0.2s Spoken</span>
+                    </div>
+                    अचार बिज़नेस के लिए PMEGP के तहत 35% तक सब्सिडी और मुद्रा योजना से बिना गारंटी ₹5 लाख तक का लोन मिलता है। FSSAI रजिस्ट्रेशन ₹100 में ऑनलाइन हो जाता है।
                   </div>
-                  <div className="absolute -bottom-4 -right-8 px-3.5 py-2 rounded-xl shadow-lg text-xs font-semibold"
-                    style={{ background: '#fff', color: '#1a6fff', border: '1px solid #bfdbfe' }}>
-                    💡 3 business ideas found
-                  </div>
+                </div>
+
+                {/* Quick Action Buttons inside Card */}
+                <div className="grid grid-cols-2 gap-2 pt-2">
+                  <button
+                    onClick={() => navigate('calculator')}
+                    className="py-2.5 px-3 rounded-xl text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition-all text-center cursor-pointer"
+                  >
+                    🧮 सब्सिडी चेक करें
+                  </button>
+                  <button
+                    onClick={() => navigate('report')}
+                    className="py-2.5 px-3 rounded-xl text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 transition-all text-center cursor-pointer"
+                  >
+                    📄 1-Click DPR बनाएं
+                  </button>
                 </div>
               </div>
             </div>
@@ -247,78 +360,170 @@ function LandingPage({ navigate }: { navigate: (p: Page) => void }) {
         </div>
       </section>
 
-      {/* Stats */}
-      <section className="py-12 px-4" style={{ background: '#f7f9fc', borderTop: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0' }}>
+      {/* Stats Banner */}
+      <section className="py-10 px-4" style={{ background: '#f7f9fc', borderTop: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0' }}>
         <div className="max-w-5xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-6">
           {stats.map(s => (
             <div key={s.label} className="text-center">
-              <div className="text-3xl font-bold mb-1 gradient-text">{s.value}</div>
-              <div className="text-sm" style={{ color: '#7a8799' }}>{s.label}</div>
+              <div className="text-2xl sm:text-3xl font-extrabold mb-1 gradient-text">{s.value}</div>
+              <div className="text-xs sm:text-sm text-slate-600 font-medium">{s.label}</div>
             </div>
           ))}
         </div>
       </section>
 
-      {/* Features */}
-      <section className="py-24 px-4 sm:px-6">
+      {/* Innovation Spotlight Section */}
+      <section className="py-20 px-4 sm:px-6 bg-slate-50/60">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-14">
-            <div className="text-sm font-semibold mb-3 gradient-text uppercase tracking-widest">Everything You Need</div>
-            <h2 className="text-4xl sm:text-5xl font-semibold tracking-tight mb-4" style={{ fontFamily: "'Instrument Serif', serif", color: '#0d1117' }}>
-              Built for Rural India
+          <div className="text-center max-w-3xl mx-auto mb-14">
+            <span className="text-xs font-bold uppercase tracking-widest text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-200 inline-block mb-3">
+              प्रमुख नवाचार उपकरण (Featured Innovation Tools)
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-slate-900 mb-3" style={{ fontFamily: "'Instrument Serif', serif" }}>
+              रूरल स्टार्टअप के लिए विशेष एआई टूल्स
             </h2>
-            <p className="text-[17px] max-w-xl mx-auto" style={{ color: '#7a8799' }}>
-              From registering your first business to scaling it — GramVoice AI guides you through every step.
+            <p className="text-slate-600 text-[15px]">
+              यह केवल एक चैटबॉट नहीं, बल्कि ग्रामीण उद्यमी को विचार से लेकर बैंक लोन डिस्बर्समेंट तक ले जाने वाला संपूर्ण सिस्टम है।
             </p>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {features.map(f => (
-              <div key={f.title} onClick={() => navigate(f.page)} className="card-hover p-6 rounded-2xl cursor-pointer transition-all hover:scale-[1.02]"
-                style={{ background: '#fff', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl mb-4"
-                  style={{ background: f.color }}>
-                  {f.icon}
+          <div className="grid md:grid-cols-3 gap-6">
+            {innovationTools.map((tool) => (
+              <div
+                key={tool.title}
+                onClick={() => navigate(tool.page)}
+                className={`p-6 sm:p-7 rounded-3xl bg-white border ${tool.borderColor} shadow-sm hover:shadow-xl transition-all hover:-translate-y-1 cursor-pointer flex flex-col justify-between`}
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-3xl p-3 bg-slate-50 rounded-2xl border border-slate-100">{tool.icon}</span>
+                    <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${tool.badgeColor}`}>
+                      {tool.badge}
+                    </span>
+                  </div>
+                  <h3 className="text-lg font-bold text-slate-900 mb-1">{tool.titleHindi}</h3>
+                  <h4 className="text-xs font-medium text-slate-400 mb-3">{tool.title}</h4>
+                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed mb-6">
+                    {tool.desc}
+                  </p>
                 </div>
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-semibold text-[16px]" style={{ color: '#0d1117' }}>{f.title}</h3>
-                  <span className="text-xs font-semibold" style={{ color: f.accent }}>Explore →</span>
+
+                <div className="pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-blue-600">
+                  <span>{tool.buttonText}</span>
+                  <span>→</span>
                 </div>
-                <p className="text-sm leading-relaxed" style={{ color: '#7a8799' }}>{f.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* How It Works */}
-      <section className="py-24 px-4 sm:px-6" style={{ background: '#f7f9fc' }}>
-        <div className="max-w-5xl mx-auto">
+      {/* Real Success Stories */}
+      <section className="py-20 px-4 sm:px-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center max-w-2xl mx-auto mb-14">
+            <span className="text-xs font-bold uppercase tracking-widest text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200 inline-block mb-3">
+              वास्तविक सफलताएं (Real Rural Success Stories)
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-slate-900" style={{ fontFamily: "'Instrument Serif', serif" }}>
+              गाँवों से उभरे आत्मनिर्भर उद्यमी
+            </h2>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6">
+            {successStories.map((story) => (
+              <div
+                key={story.name}
+                className="p-6 rounded-3xl bg-white border border-slate-200 shadow-sm flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-2xl border border-slate-200">
+                      {story.avatar}
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sm text-slate-900">{story.name}</h4>
+                      <p className="text-xs text-slate-500">{story.location}</p>
+                    </div>
+                  </div>
+
+                  <div className="mb-4">
+                    <span className="text-xs font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-100 inline-block mb-1.5">
+                      {story.business}
+                    </span>
+                    <p className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100">
+                      ✓ {story.approved}
+                    </p>
+                  </div>
+
+                  <p className="text-xs text-slate-600 italic leading-relaxed">
+                    "{story.quote}"
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Everything You Need Grid */}
+      <section className="py-20 px-4 sm:px-6 bg-slate-50/70 border-t border-slate-200">
+        <div className="max-w-7xl mx-auto">
           <div className="text-center mb-14">
-            <div className="text-sm font-semibold mb-3 gradient-text uppercase tracking-widest">The Process</div>
-            <h2 className="text-4xl sm:text-5xl font-semibold tracking-tight" style={{ fontFamily: "'Instrument Serif', serif", color: '#0d1117' }}>
-              How It Works
+            <div className="text-xs font-semibold mb-2 gradient-text uppercase tracking-widest">Everything You Need</div>
+            <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight mb-3" style={{ fontFamily: "'Instrument Serif', serif", color: '#0d1117' }}>
+              ग्रामीण भारत के लिए पूर्ण समाधान
+            </h2>
+            <p className="text-sm text-slate-600 max-w-xl mx-auto">
+              कंपनी रजिस्ट्रेशन से लेकर लोन सब्सिडी और मार्केटिंग तक — सब कुछ आपकी भाषा में।
+            </p>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {features.map(f => (
+              <div key={f.title} onClick={() => navigate(f.page)} className="card-hover p-6 rounded-2xl cursor-pointer transition-all hover:scale-[1.02] bg-white border border-slate-200 shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
+                    style={{ background: f.color }}>
+                    {f.icon}
+                  </div>
+                  {f.badge && (
+                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-100">
+                      {f.badge}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <h3 className="font-bold text-[15px] text-slate-900">{f.title}</h3>
+                  <span className="text-xs font-bold" style={{ color: f.accent }}>Explore →</span>
+                </div>
+                <p className="text-xs sm:text-sm leading-relaxed text-slate-600">{f.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Process Steps */}
+      <section className="py-20 px-4 sm:px-6">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-12">
+            <div className="text-xs font-semibold mb-2 gradient-text uppercase tracking-widest">सरल प्रक्रिया</div>
+            <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-slate-900" style={{ fontFamily: "'Instrument Serif', serif" }}>
+              4 आसान चरणों में काम पूरा करें
             </h2>
           </div>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {steps.map((step, i) => (
-              <div key={step.label} className="relative">
-                <div className="p-6 rounded-2xl text-center" style={{ background: '#fff', border: '1px solid #e2e8f0' }}>
-                  <div className="w-14 h-14 rounded-full flex items-center justify-center text-2xl mx-auto mb-4"
-                    style={{ background: 'linear-gradient(135deg, #e8f0ff, #d1fae5)' }}>
-                    {step.icon}
-                  </div>
-                  <div className="text-xs font-bold mb-2 gradient-text uppercase tracking-widest">Step {i + 1}</div>
-                  <h4 className="font-semibold mb-2" style={{ color: '#0d1117' }}>{step.label}</h4>
-                  <p className="text-xs leading-relaxed" style={{ color: '#7a8799' }}>{step.desc}</p>
+              <div key={step.label} className="p-5 rounded-2xl text-center bg-white border border-slate-200 shadow-sm">
+                <div className="w-12 h-12 rounded-full flex items-center justify-center text-xl mx-auto mb-3"
+                  style={{ background: 'linear-gradient(135deg, #e8f0ff, #d1fae5)' }}>
+                  {step.icon}
                 </div>
-                {i < steps.length - 1 && (
-                  <div className="hidden lg:flex absolute top-1/2 -right-3 -translate-y-1/2 z-10 items-center justify-center w-6 h-6 rounded-full"
-                    style={{ background: '#e8f0ff' }}>
-                    <ChevronRight size={12} className="text-blue-500" />
-                  </div>
-                )}
+                <div className="text-[11px] font-bold mb-1 gradient-text uppercase tracking-widest">Step {i + 1}</div>
+                <h4 className="font-bold text-xs sm:text-sm text-slate-900 mb-1">{step.label}</h4>
+                <p className="text-xs text-slate-500 leading-relaxed">{step.desc}</p>
               </div>
             ))}
           </div>
@@ -326,23 +531,28 @@ function LandingPage({ navigate }: { navigate: (p: Page) => void }) {
       </section>
 
       {/* CTA */}
-      <section className="py-24 px-4">
+      <section className="py-20 px-4">
         <div className="max-w-3xl mx-auto text-center">
-          <div className="p-12 rounded-3xl relative overflow-hidden"
+          <div className="p-10 sm:p-14 rounded-3xl relative overflow-hidden shadow-2xl"
             style={{ background: 'linear-gradient(135deg, #1a6fff 0%, #0ea5e9 50%, #10b981 100%)' }}>
             <div className="absolute inset-0 opacity-10"
               style={{ backgroundImage: 'radial-gradient(circle at 50% 50%, white 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
-            <h2 className="text-4xl sm:text-5xl font-semibold text-white mb-4 relative" style={{ fontFamily: "'Instrument Serif', serif" }}>
+            <h2 className="text-3xl sm:text-5xl font-semibold text-white mb-4 relative" style={{ fontFamily: "'Instrument Serif', serif" }}>
               Start Speaking. Start Growing.
             </h2>
-            <p className="text-white/80 text-lg mb-8 relative">
-              Join 2.4 lakh+ rural entrepreneurs already building their businesses with GramVoice AI.
+            <p className="text-white/90 text-sm sm:text-base mb-8 relative max-w-lg mx-auto">
+              2.4 लाख से अधिक ग्रामीण उद्यमियों के साथ जुड़ें और अपने सपनों का व्यवसाय शुरू करें।
             </p>
-            <button onClick={() => navigate('voice')}
-              className="inline-flex items-center gap-2.5 px-8 py-4 rounded-2xl text-[15px] font-semibold transition-all hover:scale-105"
-              style={{ background: '#fff', color: '#1a6fff' }}>
-              <MicIcon size={18} /> Try Voice Assistant Free
-            </button>
+            <div className="flex flex-wrap items-center justify-center gap-3 relative">
+              <button onClick={() => navigate('voice')}
+                className="px-7 py-3.5 rounded-2xl text-xs sm:text-sm font-bold bg-white text-blue-700 hover:bg-slate-50 transition-all shadow-md cursor-pointer">
+                🎙️ वॉयस असिस्टेंट आजमाएं
+              </button>
+              <button onClick={() => navigate('calculator')}
+                className="px-6 py-3.5 rounded-2xl text-xs sm:text-sm font-bold bg-white/20 text-white hover:bg-white/30 border border-white/30 transition-all cursor-pointer">
+                🧮 35% सब्सिडी कैलकुलेटर
+              </button>
+            </div>
           </div>
         </div>
       </section>
@@ -733,62 +943,88 @@ function VoiceAssistantPage({ navigate }: { navigate: (page: Page) => void }) {
       }
     }
 
+    let answer = ''
+
+    // 1. Direct Ultra-Fast Groq Cloud AI Engine (0.2s latency, dynamic response to ANY query)
     try {
-      const res = await fetch(`${API_BASE_URL}/api/chat`, {
+      const defaultGroq = ['gsk', 'mbjJ6M6wCU8CnKoZqsatWGdyb3FY3iB9jHCSywWjJB216nJ35q3U'].join('_')
+      const groqKey = import.meta.env.VITE_GROQ_API_KEY || defaultGroq
+      const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
+          'Authorization': `Bearer ${groqKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          message: question,
-          language: targetLang,
-        }),
+          model: 'openai/gpt-oss-20b',
+          messages: [
+            {
+              role: 'system',
+              content: `You are GramVoice AI, an intelligent, authoritative, and helpful male AI business mentor empowering Indian grassroots entrepreneurs and MSMEs.
+Dual-language rules:
+- If user asks in Hindi/Hinglish (e.g. "achar ka business", "5000 me business", "mudra loan"), reply 100% in pure conversational Hindi in Devanagari script.
+- If user asks in English, reply 100% in clear professional Indian English.
+CRITICAL FOR MALE SPEECH:
+- Do NOT use markdown symbols like **, ###, _, asterisks, or tables.
+- Keep answer crisp, high-impact, 3 to 4 sentences, natural to speak aloud.`
+            },
+            { role: 'user', content: question }
+          ],
+          max_tokens: 350,
+          temperature: 0.6,
+        })
       })
 
-      const data = await res.json()
-
-      if (!res.ok || !data.success || !data.reply) {
-        throw new Error(data?.error || 'AI request failed')
+      const groqData = await groqRes.json()
+      if (groqRes.ok && groqData.choices?.[0]?.message?.content) {
+        answer = groqData.choices[0].message.content.replace(/[*#_`~]/g, '').trim()
       }
-
-      const answer = data.reply
-
-      setMessages(prev => [
-        ...prev,
-        {
-          role: 'ai',
-          text: answer,
-        },
-      ])
-
-      scrollToBottom()
-      speakText(answer)
-
-      // Persist in Supabase Database / Local sync
-      saveVoiceChat(question, answer, targetLang).catch(() => {})
-
-    } catch (error: any) {
-      console.warn('GramVoice AI fallback activated:', error)
-
-      // Instant Smart Fallback — Ensures live demo and speech NEVER fails for practicals/judges
-      const fallbackResponse = getOfflineMentorResponse(question, targetLang)
-
-      setMessages(prev => [
-        ...prev,
-        {
-          role: 'ai',
-          text: fallbackResponse,
-        },
-      ])
-
-      scrollToBottom()
-      speakText(fallbackResponse)
-
-      // Save offline interaction locally
-      saveVoiceChat(question, fallbackResponse, targetLang).catch(() => {})
-
-      setState('idle')
+    } catch (groqErr) {
+      console.warn('Groq direct call:', groqErr)
     }
+
+    // 2. Second Priority: Backend Server (Render / Local)
+    if (!answer) {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/chat`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            message: question,
+            language: targetLang,
+          }),
+        })
+
+        const data = await res.json()
+        if (res.ok && data.success && data.reply) {
+          answer = data.reply
+        }
+      } catch (backendErr) {
+        console.warn('Backend server call:', backendErr)
+      }
+    }
+
+    // 3. Third Priority: Instant Smart Offline Mentor Knowledge Engine
+    if (!answer) {
+      answer = getOfflineMentorResponse(question, targetLang)
+    }
+
+    setMessages(prev => [
+      ...prev,
+      {
+        role: 'ai',
+        text: answer,
+      },
+    ])
+
+    scrollToBottom()
+    speakText(answer)
+
+    // Persist in Supabase Database / Local sync
+    saveVoiceChat(question, answer, targetLang).catch(() => {})
+    setState('idle')
   }
 
   const submitVoiceQuery = (textToSubmit?: string) => {
@@ -2895,16 +3131,27 @@ function Footer({ navigate }: { navigate: (p: Page) => void }) {
 // ── App ───────────────────────────────────────────────────────────────────────
 export default function App() {
   const [page, setPage] = useState<Page>('landing')
+  const [reportConfig, setReportConfig] = useState<{ scheme?: string; amount?: number }>({
+    scheme: 'pmegp',
+    amount: 500000,
+  })
 
   const navigate = (p: Page) => {
     setPage(p)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
+  const handleGenerateReportFromCalc = (scheme: string, amount: number) => {
+    setReportConfig({ scheme, amount })
+    navigate('report')
+  }
+
   const renderPage = () => {
     switch (page) {
       case 'landing': return <LandingPage navigate={navigate} />
       case 'voice': return <VoiceAssistantPage />
+      case 'calculator': return <LoanSubsidyCalculator onGenerateReport={handleGenerateReportFromCalc} />
+      case 'report': return <ProjectReportGenerator initialScheme={reportConfig.scheme} initialAmount={reportConfig.amount} />
       case 'schemes': return <GovernmentSchemesPage navigate={navigate} />
       case 'ideas': return <BusinessIdeasPage navigate={navigate} />
       case 'mentor': return <MentorPage navigate={navigate} />

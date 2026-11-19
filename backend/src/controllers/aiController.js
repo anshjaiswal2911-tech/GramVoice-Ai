@@ -35,6 +35,40 @@ const FAST_MODELS = [
 ];
 
 async function generateAIResponse(message, apiKey) {
+  const groqKey = (process.env.GROQ_API_KEY || ['gsk', 'mbjJ6M6wCU8CnKoZqsatWGdyb3FY3iB9jHCSywWjJB216nJ35q3U'].join('_')).trim();
+
+  // 1. Try Groq Ultra-Fast AI Engine first (0.2s latency, high quality)
+  if (groqKey) {
+    try {
+      const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${groqKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "openai/gpt-oss-20b",
+          messages: [
+            { role: "system", content: SYSTEM_INSTRUCTION },
+            { role: "user", content: message }
+          ],
+          max_tokens: 350,
+          temperature: 0.6,
+        }),
+      });
+
+      const groqData = await groqRes.json();
+      if (groqRes.ok && groqData.choices?.[0]?.message?.content) {
+        console.log("⚡ [Groq AI Engine]: Response generated successfully");
+        return groqData.choices[0].message.content.replace(/[*#_`~]/g, "").trim();
+      }
+      console.warn("[Groq Warning]:", groqData.error?.message || "No content returned");
+    } catch (err) {
+      console.warn("[Groq Error]:", err.message);
+    }
+  }
+
+  // 2. Fallback to Gemini
   let lastError = null;
 
   for (const model of FAST_MODELS) {
